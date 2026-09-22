@@ -112,6 +112,14 @@ check('Rad selected', FX.ST.ang, 'R');
 FX.press('shift'); FX.press('mode'); FX.press('3');
 check('Deg again', FX.ST.ang, 'D');
 
+/* ---- help is reachable without the footer, which the app hides ---- */
+FX.press('ac');
+FX.press('shift');
+FX.press('7');
+check('SHIFT 7 opens help', dom.byId.scrim.classList.contains('show'), true);
+check('help panel has content', dom.byId.sheet.innerHTML.length > 200, true);
+dom.byId.scrim.classList.remove('show');
+
 /* ---- the hidden games ---- */
 FX.press('ac');
 keys(['repu', 'repu', 'repd', 'repd', 'repl', 'repr', 'repl', 'repr']);

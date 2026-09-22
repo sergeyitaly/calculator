@@ -7,7 +7,7 @@
 <meta name="description" content="Scientific calculator with natural textbook display. Works offline.">
 <meta name="theme-color" content="#0b0b0c">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-KyZMTb4uFeouSWP9VmjEgcG6V3ECt/yrk9cpeGX5cDc='; style-src 'sha256-yVdV2Fpjfxl8Vn1634hEoUnaHoqLq1EEClRfWgz1sGU='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-GpN0hNpfyE3NIxnlUr0IFIAoILcLEkbN3v5jy6hxPSk='; style-src 'sha256-8GW83EBbKdsoIEATJ8KKvSl7+fp1dFnyN1wBpcve1PQ='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
@@ -23,7 +23,10 @@ body{display:flex;align-items:center;justify-content:center;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 #stage{width:360px;height:716px;transform-origin:50% 50%;flex:none}
 /* installed on a phone: edge to edge, no device frame */
-body.standalone{background:#0c0c0d;padding:0}
+body.standalone{background:#0c0c0d}
+#safeprobe{position:fixed;visibility:hidden;pointer-events:none;z-index:-1;
+  top:env(safe-area-inset-top);bottom:env(safe-area-inset-bottom);
+  left:env(safe-area-inset-left);right:env(safe-area-inset-right)}
 body.standalone .calc{border-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 
 /* ---------------- calculator body ---------------- */
@@ -78,7 +81,7 @@ sub.bs{font-size:.6em;vertical-align:sub;line-height:0;padding:0 .03em}
 .cur{display:inline-block;width:1.6px;height:1.02em;background:currentColor;vertical-align:-.16em;
   margin:0 -.8px;animation:bl 1.05s steps(1,end) infinite}
 @keyframes bl{0%,50%{opacity:1}50.01%,100%{opacity:0}}
-.gcanvas{position:absolute;left:7px;top:6px;width:308px;height:91px;z-index:2;
+.gcanvas{position:absolute;left:7px;top:50%;margin-top:-45px;width:308px;height:91px;z-index:2;
   image-rendering:pixelated}
 .arrw{position:absolute;font-size:9px;line-height:1;color:#131b1c;top:15px}
 .arrw.lf{left:1px}
@@ -1139,7 +1142,7 @@ var ROWS6 = [
 
 var ROWS5 = [
   [
-    { id: '7', l: '7', c: 'num' }, { id: '8', l: '8', c: 'num' },
+    { id: '7', l: '7', s: 'HELP', c: 'num' }, { id: '8', l: '8', c: 'num' },
     { id: '9', l: '9', s: 'CLR', c: 'num' },
     { id: 'del', l: 'DEL', s: 'INS', c: 'acc' }, { id: 'ac', l: 'AC', s: 'OFF', c: 'acc' }
   ],
@@ -1673,7 +1676,8 @@ function compKey(id, sh, al) {
   }
   UI.pending = null;
 
-  /* the yellow labels printed over three of the number keys */
+  /* the yellow labels printed over four of the number keys */
+  if (sh && id === '7') { openSheet(helpSheetHtml()); return; }
   if (sh && id === '9') { openClrMenu(); return; }
   if (sh && id === '1') { if (UI.mode === 'STAT') statResults(); return; }
   if (sh && id === '0') { startEntry(id); insertToken('Rnd('); return; }
@@ -2151,6 +2155,7 @@ function helpSheetHtml() {
     row('S⇔D', 'switch the answer between exact and decimal') +
     row('SHIFT then RCL', 'STO — store the answer in a variable') +
     row('SHIFT then MODE', 'SETUP: MthIO, angle unit, Fix / Sci / Norm, ab/c') +
+    row('SHIFT then 7', 'this help, wherever you are') +
     row('MODE', 'COMP, STAT (1-VAR, A+BX) and TABLE') +
     '</table>' +
     '<h3>Computer keyboard</h3><table class="tbl">' +
@@ -2184,22 +2189,63 @@ function registerSW() {
 /* ======================================================================
    19. LAYOUT AND BOOT
    ====================================================================== */
-/* Installed on a phone the calculator takes the whole screen; in a browser
-   tab it keeps its device proportions and leaves room for the install bar. */
+/* The box the app is actually allowed to draw in. A hidden element inset by
+   the safe areas is measured directly, so it does not matter whether the
+   system already kept the status bar out of the viewport or expects the page
+   to avoid it - the browser answers the question either way. */
+function usableBox() {
+  var w = window.innerWidth, h = window.innerHeight;
+  var p = $('safeprobe');
+  if (!p && document.body && document.body.appendChild) {
+    p = el('div');
+    p.id = 'safeprobe';
+    document.body.appendChild(p);
+  }
+  if (p && p.getBoundingClientRect) {
+    var r = p.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) { w = r.width; h = r.height; }
+  }
+  return { w: w, h: h };
+}
+
+/* Installed on a phone the calculator fills the screen: it is scaled to the
+   full width, and whatever height is left over goes to the display and to the
+   space between the key rows instead of being left as a gap above and below.
+   In a browser tab it keeps its device proportions and leaves room for the
+   install bar. */
+var DESIGN_W = 360, DESIGN_H = 662, LCD_H = 104, FOOT_H = 54;
+
 function fit() {
   var st = $('stage');
   if (!st) return;
   var app = isStandalone();
   var foot = document.querySelector('.foot');
+  var calc = document.querySelector('.calc');
+  var lcd = $('lcd');
   document.body.classList.toggle('standalone', app);
   if (foot) foot.classList.toggle('hide', app);
 
-  var h = app ? 662 : 716;
-  st.style.height = h + 'px';
-  var vw = window.innerWidth, vh = window.innerHeight;
-  var s = app
-    ? Math.min(vw / 360, vh / h)
-    : Math.min((vw - 16) / 360, (vh - 16) / h, 1.4);
+  var box = usableBox();
+  var s, bodyH = DESIGN_H, lcdH = LCD_H;
+
+  if (app) {
+    s = box.w / DESIGN_W;
+    var want = box.h / s;
+    if (want < DESIGN_H) {
+      s = box.h / DESIGN_H;            /* short screen: fit it, accept side margins */
+    } else {
+      bodyH = Math.min(want, 900);     /* very tall screen: stop stretching eventually */
+      var extra = bodyH - DESIGN_H;
+      lcdH = LCD_H + Math.min(extra * 0.4, 64);
+    }
+    st.style.height = bodyH + 'px';
+  } else {
+    s = Math.min((box.w - 16) / DESIGN_W, (box.h - 16) / (DESIGN_H + FOOT_H), 1.4);
+    st.style.height = (DESIGN_H + FOOT_H) + 'px';
+  }
+
+  if (calc) calc.style.height = bodyH + 'px';
+  if (lcd) lcd.style.height = lcdH + 'px';
   st.style.transform = 'scale(' + s + ')';
 }
 

@@ -21,8 +21,8 @@ Open the link above on the phone, then:
 | **iPhone / iPad** (Safari) | Tap **Share** → **Add to Home Screen** → **Add**. The in-page button shows these steps. |
 | **Desktop** (Chrome, Edge) | Use the install icon in the address bar. |
 
-Once installed it launches from the home screen like any other app, fills the whole
-screen, and runs offline — the service worker keeps a copy of the page, so it works on a
+Once installed it launches from the home screen like any other app, fills the screen
+edge to edge, and runs offline — the service worker keeps a copy of the page, so it works on a
 plane, in a basement, or in an exam room with no signal.
 
 ## What it does
@@ -43,6 +43,8 @@ plane, in a basement, or in an exam room with no signal.
   (A–F, X, Y, M) with `STO`/`RCL`, `M+`/`M−`, and `Ans`.
 * **MODE** — COMP, STAT (1-VAR and A+BX) and TABLE.
   **SETUP** (SHIFT MODE) — MthIO/LineIO, Deg/Rad/Gra, Fix/Sci/Norm, ab/c and d/c.
+* **Help on SHIFT 7** - the key map and the notes below, without leaving the app. The
+  footer button disappears once the app is installed, so the help lives on a key too.
 * **Errors** behave as you would expect: `Math ERROR`, `Syntax ERROR`, and the arrows take
   you back to the expression.
 
