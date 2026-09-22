@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>fx-82 Web Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Scientific calculator with natural textbook display. Works offline.">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-1T0G3kD8X4McMyY2P999NA+nSOOULBcHwbEloTn7css='; style-src 'sha256-RzUrEUOFSYCdiICKrPD4D3p5DOOsyn0NBAHrRjQtY2w='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="fx-82">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#e9edf2;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+body{display:flex;align-items:center;justify-content:center;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#stage{width:360px;height:716px;transform-origin:50% 50%;flex:none}
+/* installed on a phone: edge to edge, no device frame */
+body.standalone{background:#0c0c0d;padding:0}
+body.standalone .calc{border-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+
+/* ---------------- calculator body ---------------- */
+.calc{width:360px;height:662px;border-radius:22px;padding:13px 12px 15px;
+  background:linear-gradient(168deg,#232326 0%,#141416 12%,#0e0e10 60%,#141417 100%);
+  border:1px solid #000;
+  box-shadow:0 18px 44px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -2px 8px rgba(0,0,0,.6);
+  display:flex;flex-direction:column}
+
+.top{padding:0 4px 8px;line-height:1}
+.brandrow{display:flex;align-items:baseline;justify-content:space-between}
+.brand{font-size:16px;font-weight:800;letter-spacing:.1em;color:#f2f4f7;text-shadow:0 1px 0 #000}
+.model{font-size:11px;font-weight:600;letter-spacing:.04em;color:#e6e9ee}
+.vpam{margin-top:7px;display:flex;align-items:baseline;justify-content:center;gap:9px}
+.vpam i{font-size:9.5px;font-style:italic;font-weight:800;letter-spacing:.09em;color:#c9ced6}
+.vpam b{font-size:7.5px;font-weight:700;color:#9aa0a8}
+
+/* ---------------- LCD ---------------- */
+.bezel{border-radius:4px;padding:6px;background:linear-gradient(#17171a,#0d0d0f);
+  border:1px solid #000;box-shadow:inset 0 2px 6px rgba(0,0,0,.85)}
+.lcd{position:relative;height:104px;border-radius:2px;padding:3px 7px 4px;overflow:hidden;
+  background:linear-gradient(165deg,#eef4f5,#d6e2e4);color:#131b1c;
+  box-shadow:inset 0 0 12px rgba(90,110,112,.45);
+  font-family:"DejaVu Sans","Segoe UI",Roboto,Arial,sans-serif;
+  display:flex;flex-direction:column}
+.ind{height:11px;font-size:8px;letter-spacing:.05em;display:flex;gap:6px;align-items:center;
+  justify-content:flex-end;color:#2c3637;flex:none;white-space:nowrap;overflow:hidden}
+.ind span{font-weight:700}
+.l1wrap{flex:1;overflow:hidden;position:relative}
+.l1{position:absolute;inset:0;overflow:hidden;font-size:19px;line-height:1.3;
+  padding-top:3px;white-space:nowrap}
+.l1 .inner{display:inline-block;will-change:transform}
+.l2{flex:none;height:36px;font-size:24px;line-height:1;white-space:nowrap;overflow:hidden;
+  display:flex;justify-content:flex-end;align-items:center}
+.l2 .inner{display:inline-block}
+.lcd.menu .l1{font-size:13.5px;white-space:normal;line-height:1.42;padding-top:1px}
+.lcd.menu .l2{display:none}
+.l2.small{font-size:19px}
+.l2.tiny{font-size:15px}
+
+/* math typesetting inside the LCD */
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;
+  font-size:.76em;margin:0 .1em;position:relative;top:-.07em}
+.frac>span{padding:0 .22em;display:block}
+.frac>.num{border-bottom:1.2px solid currentColor;padding-bottom:.02em}
+.frac>.den{padding-top:.04em}
+.mix{display:inline-flex;align-items:center;vertical-align:middle}
+.rt{display:inline-flex;align-items:stretch;margin:0 .06em}
+.rt>svg{width:.46em;flex:none;overflow:visible}
+.rt>.body{border-top:1.2px solid currentColor;padding:.08em .14em 0 .05em}
+.rt>.idx{font-size:.55em;align-self:flex-start;margin-right:-.1em;position:relative;top:-.1em}
+sup.pw{font-size:.62em;vertical-align:super;line-height:0;padding:0 .03em}
+sub.bs{font-size:.6em;vertical-align:sub;line-height:0;padding:0 .03em}
+.slot{display:inline-block;width:.6em;height:.84em;border:1.2px dashed currentColor;
+  opacity:.6;vertical-align:-.1em;margin:0 .04em}
+.cur{display:inline-block;width:1.6px;height:1.02em;background:currentColor;vertical-align:-.16em;
+  margin:0 -.8px;animation:bl 1.05s steps(1,end) infinite}
+@keyframes bl{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+.gcanvas{position:absolute;left:7px;top:6px;width:308px;height:91px;z-index:2;
+  image-rendering:pixelated}
+.arrw{position:absolute;font-size:9px;line-height:1;color:#131b1c;top:15px}
+.arrw.lf{left:1px}
+.arrw.rg{right:1px}
+
+/* ---------------- keypad ---------------- */
+.pad{flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:14px 2px 0}
+.fn{display:grid;grid-template-columns:repeat(6,1fr);gap:15px 6px;align-items:end}
+.row6{display:grid;grid-template-columns:repeat(6,1fr);gap:0 6px;margin-top:15px}
+.row5{display:grid;grid-template-columns:repeat(5,1fr);gap:0 8px;margin-top:16px}
+
+.key{position:relative;height:25px;border-radius:5px;display:flex;align-items:center;
+  justify-content:center;font-size:12.5px;font-weight:600;color:#f4f6f8;cursor:pointer;
+  user-select:none;touch-action:manipulation;
+  background:linear-gradient(#34353a,#212226);border:1px solid #000;
+  box-shadow:0 2px 0 #08080a,0 2.5px 3px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.13)}
+.key.num{height:33px;border-radius:7px;font-size:19px;font-weight:500;color:#fff;
+  background:linear-gradient(#9ba1a6,#7c8288);border-color:#3c4044;
+  box-shadow:0 2.5px 0 #232628,0 3px 4px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.35)}
+.key.op{height:33px;border-radius:7px;font-size:19px;font-weight:500;
+  background:linear-gradient(#585e63,#3f4449);border-color:#101214;
+  box-shadow:0 2.5px 0 #0c0d0f,0 3px 4px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18)}
+.key.acc{height:33px;border-radius:7px;font-size:17px;font-weight:600;color:#fff;
+  background:linear-gradient(#a6d055,#79a92c);border-color:#4d7018;
+  box-shadow:0 2.5px 0 #3f5c14,0 3px 4px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.3)}
+.key.pill{height:19px;border-radius:10px;background:linear-gradient(#2c2d32,#161619);
+  box-shadow:0 2px 0 #08080a,inset 0 1px 0 rgba(255,255,255,.16)}
+.key.pill::after{content:"";position:absolute;inset:3px 7px;border-radius:8px;
+  background:radial-gradient(ellipse at 50% 30%,rgba(255,255,255,.12),transparent 70%)}
+.key.down{transform:translateY(2px);box-shadow:0 0 0 #000,inset 0 2px 5px rgba(0,0,0,.55);
+  filter:brightness(1.25)}
+.key .sh,.key .al,.key .wh{position:absolute;top:-12px;font-size:8.5px;font-weight:700;
+  white-space:nowrap;line-height:1;pointer-events:none}
+.key .sh{left:0;color:#f2b12b}
+.key .al{right:0;color:#ec7f9f}
+.key .wh{left:0;color:#e9ecf1;font-weight:600}
+.key .wh.rgt{left:auto;right:0}
+.key.pill .wh{left:50%;transform:translateX(-50%);text-align:center}
+.key .wh b{font-weight:700}
+.key .wh b.y{color:#f2b12b}
+.key .wh b.p{color:#ec7f9f}
+.kfr{display:inline-flex;flex-direction:column;font-size:.8em;line-height:1;vertical-align:-.15em}
+.kfr em{font-style:normal;padding:0 1px}
+.kfr em:first-child{border-bottom:1px solid currentColor;padding-bottom:1px}
+.key .lb{pointer-events:none;display:block}
+.key i{font-style:italic;font-family:Georgia,"Times New Roman",serif}
+.key sup{font-size:.62em;vertical-align:super;line-height:0}
+.key sub{font-size:.62em;vertical-align:sub;line-height:0}
+
+/* replay pad */
+.replay{position:relative;grid-column:3 / span 2;grid-row:1 / span 2;
+  width:84px;height:84px;border-radius:50%;justify-self:center;align-self:center;
+  background:radial-gradient(circle at 50% 32%,#3a3b41,#131316 74%);
+  border:1px solid #000;box-shadow:0 3px 0 #08080a,inset 0 1px 0 rgba(255,255,255,.12)}
+.replay::after{content:"";position:absolute;inset:29px;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#2b2c31,#151518);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.rk{position:absolute;display:flex;align-items:center;justify-content:center;color:#cdd3da;
+  font-size:11px;cursor:pointer;z-index:2;border-radius:50%;touch-action:manipulation}
+.rk.down{filter:brightness(1.8)}
+.rk.u{top:2px;left:29px;width:26px;height:26px}
+.rk.d{bottom:2px;left:29px;width:26px;height:26px}
+.rk.l{left:2px;top:29px;width:26px;height:26px}
+.rk.r{right:2px;top:29px;width:26px;height:26px}
+
+/* ---------------- footer / install ---------------- */
+.foot{width:360px;height:44px;margin-top:10px;display:flex;align-items:center;gap:8px}
+.btn{flex:1;height:100%;border-radius:12px;border:1px solid #2f3742;background:linear-gradient(#232831,#171b21);
+  color:#dfe6ef;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;user-select:none;touch-action:manipulation}
+.btn:active{filter:brightness(1.3)}
+.btn.primary{background:linear-gradient(#2f6fb5,#1f4a7c);border-color:#2a5c94;color:#fff}
+.btn.mini{flex:none;width:44px;font-size:15px}
+.btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+.dot{width:7px;height:7px;border-radius:50%;background:#4d5666;flex:none}
+.dot.ok{background:#3fbf6a;box-shadow:0 0 7px #3fbf6a}
+.dot.inl{display:inline-block;vertical-align:1px}
+
+/* ---------------- sheets ---------------- */
+.scrim{position:fixed;inset:0;background:rgba(4,6,9,.72);display:none;z-index:50;
+  align-items:flex-end;justify-content:center}
+.scrim.show{display:flex}
+.sheet{width:100%;max-width:440px;max-height:88vh;overflow:auto;background:#161a20;
+  border:1px solid #2a323d;border-bottom:none;border-radius:18px 18px 0 0;padding:18px 18px 26px;
+  padding-bottom:calc(26px + env(safe-area-inset-bottom));animation:up .22s ease}
+@keyframes up{from{transform:translateY(26px);opacity:.3}to{transform:none;opacity:1}}
+.sheet h2{margin:0 0 6px;font-size:17px}
+.sheet h3{margin:16px 0 6px;font-size:13px;color:#8e99a8;text-transform:uppercase;letter-spacing:.08em}
+.sheet p{margin:0 0 14px;font-size:13px;line-height:1.55;color:#9aa5b3}
+.sheet ol{margin:0 0 16px;padding-left:20px;font-size:13.5px;line-height:1.9;color:#d3dae3}
+.sheet li b{color:#fff}
+.tbl{width:100%;font-size:12.5px;color:#c3ccd7;border-collapse:collapse}
+.tbl td{padding:5px 6px;border-top:1px solid #242b34;vertical-align:top}
+.tbl td:first-child{color:#8e99a8;white-space:nowrap;width:42%}
+.ios-share{display:inline-block;width:13px;height:16px;vertical-align:-3px;margin:0 2px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="calc">
+    <div class="top">
+      <div class="brandrow">
+        <span class="brand">fx-82 WEB</span>
+        <span class="model">fx-82ES PLUS style</span>
+      </div>
+      <div class="vpam"><i>NATURAL-V.P.A.M.</i><b>2nd edition</b></div>
+    </div>
+
+    <div class="bezel">
+      <div class="lcd" id="lcd">
+        <div class="ind" id="ind"></div>
+        <div class="l1wrap"><div class="l1" id="l1"><span class="inner" id="l1i"></span></div></div>
+        <div class="l2" id="l2"><span class="inner" id="l2i"></span></div>
+        <div class="arrw lf hide" id="aleft">&#9668;</div>
+        <div class="arrw rg hide" id="aright">&#9658;</div>
+      </div>
+    </div>
+
+    <div class="pad" id="pad"></div>
+  </div>
+
+  <div class="foot">
+    <div class="btn primary" id="installBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg>
+      <span id="installTxt">Install on phone</span>
+    </div>
+    <div class="btn mini" id="helpBtn" title="Help">?</div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+<script>
+"use strict";
+/* ======================================================================
+   fx-82 WEB
+   A browser reproduction of a Casio fx-82ES PLUS (2nd edition):
+   natural textbook display, the same operator precedence table, the same
+   S<=>D exact/decimal answers, the same SETUP and MODE menus.
+   Everything lives in this one file so the app can be cached offline.
+   ====================================================================== */
+
+/* ---------- tiny DOM helpers ---------- */
+var $ = function (id) { return document.getElementById(id); };
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (txt != null) e.textContent = txt;
+  return e;
+}
+
+/* ======================================================================
+   1. INPUT MODEL
+   The top line is a tree, exactly like the real Natural Display: a
+   fraction really contains two sub-expressions, a root contains its
+   radicand, and the cursor can travel inside them.
+
+     {k:'c',    v:'7'}             a plain character / token
+     {k:'frac', n:[], d:[]}        numerator over denominator
+     {k:'mix',  i:[], n:[], d:[]}  mixed fraction
+     {k:'sqrt', a:[]}              square root
+     {k:'root', n:[], a:[]}        n-th root
+     {k:'sup',  e:[], pre:''}      exponent, optionally preceded by x10 / 10 / e
+   ====================================================================== */
+function C(v) { return { k: 'c', v: v }; }
+function FRAC(n, d) { return { k: 'frac', n: n || [], d: d || [] }; }
+function MIX(i, n, d) { return { k: 'mix', i: i || [], n: n || [], d: d || [] }; }
+function SQRT(a) { return { k: 'sqrt', a: a || [] }; }
+function ROOT(n, a) { return { k: 'root', n: n || [], a: a || [] }; }
+function SUP(e, pre) { return { k: 'sup', e: e || [], pre: pre || '' }; }
+function LOGB(n, a) { return { k: 'logb', n: n || [], a: a || [] }; }
+
+var SUBKEYS = {
+  frac: ['n', 'd'], mix: ['i', 'n', 'd'], sqrt: ['a'], root: ['n', 'a'],
+  sup: ['e'], logb: ['n', 'a']
+};
+
+function subs(n) {
+  var keys = SUBKEYS[n.k];
+  if (!keys) return [];
+  var out = [];
+  for (var i = 0; i < keys.length; i++) out.push(n[keys[i]]);
+  return out;
+}
+
+function clone(list) {
+  return list.map(function (n) {
+    if (n.k === 'c') return C(n.v);
+    var c = { k: n.k };
+    var keys = SUBKEYS[n.k] || [];
+    for (var i = 0; i < keys.length; i++) c[keys[i]] = clone(n[keys[i]]);
+    if (n.pre) c.pre = n.pre;
+    return c;
+  });
+}
+
+/* Does the entry contain anything that makes the answer decimal?
+   On the real machine an answer stays exact (fraction / surd / pi) only
+   while every number typed in was an integer. */
+function hasDecimal(list) {
+  for (var i = 0; i < list.length; i++) {
+    var n = list[i];
+    if (n.k === 'c' && (n.v === '.' || n.v === 'Ran#')) return true;
+    if (n.k === 'sup' && n.pre === 'x10') return true;
+    var s = subs(n);
+    for (var j = 0; j < s.length; j++) if (hasDecimal(s[j])) return true;
+  }
+  return false;
+}
+
+/* An entry written in degrees-minutes-seconds answers in the same form.
+   One lone degree mark is only a unit, so two or more are required. */
+function countDMS(list) {
+  var c = 0;
+  for (var i = 0; i < list.length; i++) {
+    var n = list[i];
+    if (n.k === 'c' && n.v === '°') c++;
+    var s = subs(n);
+    for (var j = 0; j < s.length; j++) c += countDMS(s[j]);
+  }
+  return c;
+}
+function hasDMS(list) { return countDMS(list) >= 2; }
+
+function countNodes(list) {
+  var c = 0;
+  for (var i = 0; i < list.length; i++) {
+    c++;
+    var s = subs(list[i]);
+    for (var j = 0; j < s.length; j++) c += countNodes(s[j]);
+  }
+  return c;
+}
+
+/* ---------- cursor ----------------------------------------------------
+   Every legal cursor stop is enumerated left to right; moving the cursor
+   is then just stepping through that array, which reproduces the way the
+   real replay pad walks into and out of fractions and roots. */
+function positions(list, out) {
+  out.push({ l: list, i: 0 });
+  for (var j = 0; j < list.length; j++) {
+    var s = subs(list[j]);
+    for (var k = 0; k < s.length; k++) positions(s[k], out);
+    out.push({ l: list, i: j + 1 });
+  }
+  return out;
+}
+
+function posIndex(ps, c) {
+  for (var k = 0; k < ps.length; k++) if (ps[k].l === c.l && ps[k].i === c.i) return k;
+  return -1;
+}
+
+/* locate the node that owns a sub-expression list */
+function findOwner(list, target) {
+  for (var i = 0; i < list.length; i++) {
+    var n = list[i], s = subs(n);
+    for (var j = 0; j < s.length; j++) {
+      if (s[j] === target) return { node: n, list: list, index: i, slot: j };
+      var deep = findOwner(s[j], target);
+      if (deep) return deep;
+    }
+  }
+  return null;
+}
+
+/* ======================================================================
+   2. RENDERING THE NATURAL DISPLAY
+   ====================================================================== */
+var RADICAL_PATH = 'M0 13.5 L2.6 13.5 L5.4 23 L8.6 1 L10 1';
+
+function radicalSvg() {
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 10 24');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', RADICAL_PATH);
+  p.setAttribute('fill', 'none');
+  p.setAttribute('stroke', 'currentColor');
+  p.setAttribute('stroke-width', '1.2');
+  p.setAttribute('vector-effect', 'non-scaling-stroke');
+  p.setAttribute('stroke-linejoin', 'miter');
+  svg.appendChild(p);
+  return svg;
+}
+
+/* characters that are stored one way and drawn another */
+var DRAW = { 'x10': '×10', 'neg': '−' };
+
+function renderList(list, cur) {
+  var f = document.createDocumentFragment();
+  var inThis = cur && cur.l === list;
+  if (list.length === 0) {
+    if (inThis) f.appendChild(el('span', 'cur'));
+    else f.appendChild(el('span', 'slot'));
+    return f;
+  }
+  for (var j = 0; j < list.length; j++) {
+    if (inThis && cur.i === j) f.appendChild(el('span', 'cur'));
+    f.appendChild(renderNode(list[j], cur));
+  }
+  if (inThis && cur.i === list.length) f.appendChild(el('span', 'cur'));
+  return f;
+}
+
+function renderNode(n, cur) {
+  var w, b;
+  if (n.k === 'c') return el('span', null, n.v);
+
+  if (n.k === 'frac' || n.k === 'mix') {
+    w = el('span', 'mix');
+    if (n.k === 'mix') w.appendChild(el('span', null, '')).appendChild(renderList(n.i, cur));
+    var fr = el('span', 'frac');
+    fr.appendChild(el('span', 'num')).appendChild(renderList(n.n, cur));
+    fr.appendChild(el('span', 'den')).appendChild(renderList(n.d, cur));
+    w.appendChild(fr);
+    return w;
+  }
+  if (n.k === 'sqrt' || n.k === 'root') {
+    w = el('span', 'rt');
+    if (n.k === 'root') w.appendChild(el('span', 'idx')).appendChild(renderList(n.n, cur));
+    w.appendChild(radicalSvg());
+    b = el('span', 'body');
+    b.appendChild(renderList(n.k === 'sqrt' ? n.a : n.a, cur));
+    w.appendChild(b);
+    return w;
+  }
+  if (n.k === 'logb') {
+    w = el('span');
+    w.appendChild(el('span', null, 'log'));
+    b = el('sub', 'bs');
+    b.appendChild(renderList(n.n, cur));
+    w.appendChild(b);
+    w.appendChild(el('span', null, '('));
+    w.appendChild(renderList(n.a, cur));
+    w.appendChild(el('span', null, ')'));
+    return w;
+  }
+  if (n.k === 'sup') {
+    w = el('span');
+    if (n.pre) w.appendChild(el('span', null, DRAW[n.pre] || n.pre));
+    var s = el('sup', 'pw');
+    s.appendChild(renderList(n.e, cur));
+    w.appendChild(s);
+    return w;
+  }
+  return el('span', null, '?');
+}
+
+/* ======================================================================
+   3. TOKENIZER
+   The tree is turned into a token stream; fractions and roots stay whole
+   so the parser never has to guess where invisible brackets belong.
+   ====================================================================== */
+var FUNCS = {
+  'sin(': 'sin', 'cos(': 'cos', 'tan(': 'tan',
+  'sin⁻¹(': 'asin', 'cos⁻¹(': 'acos', 'tan⁻¹(': 'atan',
+  'sinh(': 'sinh', 'cosh(': 'cosh', 'tanh(': 'tanh',
+  'sinh⁻¹(': 'asinh', 'cosh⁻¹(': 'acosh', 'tanh⁻¹(': 'atanh',
+  'log(': 'log', 'ln(': 'ln', 'Abs(': 'abs', 'Pol(': 'pol', 'Rec(': 'rec',
+  'Rnd(': 'rnd', 'RanInt#(': 'ranint'
+};
+var VARS = 'ABCDEFXYM';
+
+function charTok(v) {
+  if (v === '+') return { t: 'op', v: '+' };
+  if (v === '−') return { t: 'op', v: '-' };
+  if (v === '×') return { t: 'op', v: '*' };
+  if (v === '÷') return { t: 'op', v: '/' };
+  if (v === '-') return { t: 'neg' };
+  if (v === '(') return { t: 'lp' };
+  if (v === ')') return { t: 'rp' };
+  if (v === ',') return { t: 'comma' };
+  if (v === 'π') return { t: 'cst', v: 'pi' };
+  if (v === 'e') return { t: 'cst', v: 'e' };
+  if (v === 'Ans') return { t: 'cst', v: 'ans' };
+  if (v === 'Ran#') return { t: 'cst', v: 'ran' };
+  if (v === '!') return { t: 'post', v: 'fact' };
+  if (v === '%') return { t: 'post', v: 'pct' };
+  if (v === '°') return { t: 'post', v: 'dms' };
+  if (v === 'ʳ') return { t: 'post', v: 'rad' };
+  if (v === 'ᵍ') return { t: 'post', v: 'grad' };
+  if (v === 'nPr') return { t: 'perm' };
+  if (v === 'nCr') return { t: 'comb' };
+  if (v === '→') return { t: 'sto' };
+  if (VARS.indexOf(v) >= 0 && v.length === 1) return { t: 'var', v: v };
+  if (FUNCS[v]) return [{ t: 'fn', v: FUNCS[v] }, { t: 'lp' }];
+  return { t: 'bad' };
+}
+
+function tokenize(list) {
+  var out = [], num = '';
+  function flush() { if (num) { out.push({ t: 'num', v: num }); num = ''; } }
+  for (var i = 0; i < list.length; i++) {
+    var n = list[i];
+    if (n.k === 'c') {
+      if ((n.v >= '0' && n.v <= '9') || n.v === '.') { num += n.v; continue; }
+      flush();
+      var tk = charTok(n.v);
+      if (tk.length) { for (var q = 0; q < tk.length; q++) out.push(tk[q]); }
+      else out.push(tk);
+      continue;
+    }
+    flush();
+    if (n.k === 'frac') out.push({ t: 'frac', n: tokenize(n.n), d: tokenize(n.d) });
+    else if (n.k === 'mix') out.push({ t: 'mix', i: tokenize(n.i), n: tokenize(n.n), d: tokenize(n.d) });
+    else if (n.k === 'sqrt') out.push({ t: 'sqrt', a: tokenize(n.a) });
+    else if (n.k === 'root') out.push({ t: 'root', n: tokenize(n.n), a: tokenize(n.a) });
+    else if (n.k === 'logb') out.push({ t: 'logb', n: tokenize(n.n), a: tokenize(n.a) });
+    else if (n.k === 'sup') {
+      /* x10^n, 10^n and e^n expand to ordinary tokens */
+      if (n.pre === 'x10') { out.push({ t: 'op', v: '*' }); out.push({ t: 'num', v: '10' }); }
+      else if (n.pre === '10') out.push({ t: 'num', v: '10' });
+      else if (n.pre === 'e') out.push({ t: 'cst', v: 'e' });
+      out.push({ t: 'pow', e: tokenize(n.e) });
+    }
+  }
+  flush();
+  return out;
+}
+
+/* ======================================================================
+   4. MACHINE STATE
+   ====================================================================== */
+var ST = {
+  ang: 'D',                 /* D / R / G                                  */
+  disp: { t: 'norm', n: 1 },/* {t:'norm',n:1|2} {t:'fix',n} {t:'sci',n}   */
+  math: true,               /* MthIO (true) or LineIO                     */
+  mixed: false,             /* ab/c (true) or d/c (false)                 */
+  ans: 0,
+  vars: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, X: 0, Y: 0, M: 0 }
+};
+
+function CalcError(kind) { this.kind = kind; }
+function mathErr() { throw new CalcError('Math'); }
+function synErr() { throw new CalcError('Syntax'); }
+
+/* ======================================================================
+   5. FUNCTION LIBRARY (angle aware, with the exact values the real
+   machine returns for whole numbers of degrees)
+   ====================================================================== */
+function toRad(x) { return ST.ang === 'D' ? x * Math.PI / 180 : ST.ang === 'G' ? x * Math.PI / 200 : x; }
+function fromRad(x) { return ST.ang === 'D' ? x * 180 / Math.PI : ST.ang === 'G' ? x * 200 / Math.PI : x; }
+function quarter() { return ST.ang === 'D' ? 90 : ST.ang === 'G' ? 100 : 0; }
+function fold(x, q) {              /* which quarter turn, 0..3 */
+  var m = x % (4 * q);
+  if (m < 0) m += 4 * q;
+  return m / q;
+}
+/* a value written in one angle unit, expressed in the unit now selected */
+function unitTo(v, from) {
+  if (from === ST.ang) return v;
+  var deg = from === 'D' ? v : (from === 'R' ? v * 180 / Math.PI : v * 0.9);
+  if (ST.ang === 'D') return deg;
+  return ST.ang === 'R' ? deg * Math.PI / 180 : deg / 0.9;
+}
+
+function fnSin(x) {
+  var q = quarter();
+  if (q && Number.isInteger(x / q)) { var t = fold(x, q); return [0, 1, 0, -1][t]; }
+  return Math.sin(toRad(x));
+}
+function fnCos(x) {
+  var q = quarter();
+  if (q && Number.isInteger(x / q)) { var t = fold(x, q); return [1, 0, -1, 0][t]; }
+  return Math.cos(toRad(x));
+}
+function fnTan(x) {
+  var q = quarter();
+  if (q && Number.isInteger(x / q)) {
+    var t = fold(x, q);
+    if (t === 1 || t === 3) mathErr();
+    return 0;
+  }
+  return Math.tan(toRad(x));
+}
+function fact(n) {
+  if (!Number.isInteger(n) || n < 0 || n > 69) mathErr();
+  var r = 1;
+  for (var i = 2; i <= n; i++) r *= i;
+  return r;
+}
+function nPr(n, r) {
+  if (!Number.isInteger(n) || !Number.isInteger(r) || n < 0 || r < 0 || r > n) mathErr();
+  var v = 1;
+  for (var i = 0; i < r; i++) v *= (n - i);
+  return v;
+}
+function nCr(n, r) {
+  if (!Number.isInteger(n) || !Number.isInteger(r) || n < 0 || r < 0 || r > n) mathErr();
+  var v = 1;
+  for (var i = 1; i <= Math.min(r, n - r); i++) v = v * (n - Math.min(r, n - r) + i) / i;
+  return Math.round(v);
+}
+function powR(a, b) {
+  if (a < 0 && !Number.isInteger(b)) {
+    /* odd roots of negatives are still real: 1/3, 1/5 ... */
+    var inv = 1 / b;
+    if (Math.abs(inv - Math.round(inv)) < 1e-12 && Math.round(inv) % 2 !== 0) {
+      return -Math.pow(-a, b);
+    }
+    mathErr();
+  }
+  if (a === 0 && b < 0) mathErr();
+  var v = Math.pow(a, b);
+  if (!isFinite(v)) mathErr();
+  return v;
+}
+function applyFn(name, args) {
+  var x = args[0];
+  switch (name) {
+    case 'sin': return fnSin(x);
+    case 'cos': return fnCos(x);
+    case 'tan': return fnTan(x);
+    case 'asin': if (x < -1 || x > 1) mathErr(); return fromRad(Math.asin(x));
+    case 'acos': if (x < -1 || x > 1) mathErr(); return fromRad(Math.acos(x));
+    case 'atan': return fromRad(Math.atan(x));
+    case 'sinh': return Math.sinh(x);
+    case 'cosh': return Math.cosh(x);
+    case 'tanh': return Math.tanh(x);
+    case 'asinh': return Math.asinh(x);
+    case 'acosh': if (x < 1) mathErr(); return Math.acosh(x);
+    case 'atanh': if (x <= -1 || x >= 1) mathErr(); return Math.atanh(x);
+    case 'log': if (x <= 0) mathErr(); return Math.log10(x);
+    case 'ln': if (x <= 0) mathErr(); return Math.log(x);
+    case 'abs': return Math.abs(x);
+    case 'rnd': return roundToDisplay(x);
+    case 'ranint': {
+      var lo = Math.round(x), hi = Math.round(args[1]);
+      if (!(hi >= lo)) mathErr();
+      return lo + Math.floor(Math.random() * (hi - lo + 1));
+    }
+    case 'pol': {
+      var r = Math.sqrt(x * x + args[1] * args[1]);
+      var th = fromRad(Math.atan2(args[1], x));
+      ST.vars.X = r; ST.vars.Y = th;
+      return { multi: [['r', r], ['θ', th]] };
+    }
+    case 'rec': {
+      var px = x * fnCos(args[1]), py = x * fnSin(args[1]);
+      ST.vars.X = px; ST.vars.Y = py;
+      return { multi: [['X', px], ['Y', py]] };
+    }
+  }
+  synErr();
+}
+
+/* ======================================================================
+   6. PARSER / EVALUATOR
+   Priority, straight off the fx-82ES PLUS manual's table:
+     1 functions with brackets          sin(, log(, Abs(
+     2 postfix functions                x!, %, d m s
+     3 powers and roots                 x^, x2, x3, x-1, nth root
+     4 fractions
+     5 prefix minus                     (-)
+     6 implied multiplication before pi, e, variables, Ans and functions
+     7 nPr, nCr
+     8 x, div          <- a bracket after a number lives here, which is why
+     9 +, -               6 div 2(1+2) is 9 but 6 div 2pi is 6/(2pi)
+   ====================================================================== */
+function Parser(toks) { this.t = toks; this.p = 0; }
+Parser.prototype.peek = function (k) { return this.t[this.p + (k || 0)]; };
+Parser.prototype.at = function (type, v) {
+  var tk = this.t[this.p];
+  return !!tk && tk.t === type && (v === undefined || tk.v === v);
+};
+Parser.prototype.run = function () {
+  if (!this.t.length) synErr();
+  var v = this.expr();
+  if (this.p < this.t.length) synErr();
+  return v;
+};
+Parser.prototype.expr = function () {
+  var v = this.term();
+  while (this.at('op', '+') || this.at('op', '-')) {
+    var o = this.t[this.p++].v;
+    var r = this.term();
+    v = o === '+' ? v + r : v - r;
+  }
+  return v;
+};
+Parser.prototype.term = function () {
+  var v = this.combi();
+  for (;;) {
+    if (this.at('op', '*') || this.at('op', '/')) {
+      var o = this.t[this.p++].v;
+      var r = this.combi();
+      if (o === '/') { if (r === 0) mathErr(); v = v / r; } else v = v * r;
+    } else if (this.at('lp')) {          /* 2(1+2) - same priority as x */
+      v = v * this.combi();
+    } else break;
+  }
+  return v;
+};
+Parser.prototype.combi = function () {
+  var v = this.implicit();
+  while (this.at('perm') || this.at('comb')) {
+    var isP = this.t[this.p++].t === 'perm';
+    var r = this.implicit();
+    v = isP ? nPr(v, r) : nCr(v, r);
+  }
+  return v;
+};
+var IMPLICIT = { cst: 1, var: 1, fn: 1, sqrt: 1, root: 1, frac: 1, mix: 1, logb: 1 };
+Parser.prototype.implicit = function () {
+  var v = this.neg();
+  while (this.peek() && IMPLICIT[this.peek().t]) v = v * this.neg();
+  return v;
+};
+Parser.prototype.neg = function () {
+  if (this.at('neg')) { this.p++; return -this.neg(); }
+  return this.post();
+};
+Parser.prototype.post = function () {
+  var v = this.atom();
+  for (;;) {
+    if (this.at('pow')) { var e = evalToks(this.t[this.p++].e); v = powR(v, e); }
+    else if (this.at('post', 'fact')) { this.p++; v = fact(v); }
+    else if (this.at('post', 'pct')) { this.p++; v = v / 100; }
+    else if (this.at('post', 'dms')) { v = this.dms(v); }
+    else if (this.at('post', 'rad')) { this.p++; v = unitTo(v, 'R'); }
+    else if (this.at('post', 'grad')) { this.p++; v = unitTo(v, 'G'); }
+    else break;
+    if (!isFinite(v)) mathErr();
+  }
+  return v;
+};
+/* 12 d 30 d 0 d  ->  12.5 degrees, converted to whatever unit is selected */
+Parser.prototype.dms = function (deg) {
+  this.p++;
+  var sign = deg < 0 ? -1 : 1, v = Math.abs(deg);
+  if (this.at('num')) {
+    var m = parseFloat(this.t[this.p++].v);
+    if (!this.at('post', 'dms')) synErr();
+    this.p++;
+    v += m / 60;
+    if (this.at('num')) {
+      var s = parseFloat(this.t[this.p++].v);
+      if (!this.at('post', 'dms')) synErr();
+      this.p++;
+      v += s / 3600;
+    }
+  }
+  return unitTo(sign * v, 'D');
+};
+Parser.prototype.atom = function () {
+  var tk = this.peek();
+  if (!tk) synErr();
+  this.p++;
+  switch (tk.t) {
+    case 'num': {
+      var v = parseFloat(tk.v);
+      if (isNaN(v)) synErr();
+      return v;
+    }
+    case 'cst':
+      if (tk.v === 'pi') return Math.PI;
+      if (tk.v === 'e') return Math.E;
+      if (tk.v === 'ans') return ST.ans;
+      if (tk.v === 'ran') return Math.floor(Math.random() * 1000) / 1000;
+      synErr();
+      break;
+    case 'var': return ST.vars[tk.v];
+    case 'lp': {
+      var e = this.expr();
+      if (this.at('rp')) this.p++;      /* a missing ) is closed automatically */
+      return e;
+    }
+    case 'fn': {
+      if (!this.at('lp')) synErr();
+      this.p++;
+      var args = [this.expr()];
+      while (this.at('comma')) { this.p++; args.push(this.expr()); }
+      if (this.at('rp')) this.p++;
+      var r = applyFn(tk.v, args);
+      if (r && r.multi) { MULTI = r.multi; return r.multi[0][1]; }
+      return r;
+    }
+    case 'frac': {
+      var d = evalToks(tk.d);
+      if (d === 0) mathErr();
+      return evalToks(tk.n) / d;
+    }
+    case 'mix': {
+      var dd = evalToks(tk.d);
+      if (dd === 0) mathErr();
+      var i = evalToks(tk.i), f = evalToks(tk.n) / dd;
+      return i < 0 ? i - f : i + f;
+    }
+    case 'logb': {
+      var base = evalToks(tk.n), arg = evalToks(tk.a);
+      if (base <= 0 || base === 1 || arg <= 0) mathErr();
+      return Math.log(arg) / Math.log(base);
+    }
+    case 'sqrt': {
+      var a = evalToks(tk.a);
+      if (a < 0) mathErr();
+      return Math.sqrt(a);
+    }
+    case 'root': {
+      var n = evalToks(tk.n), b = evalToks(tk.a);
+      if (n === 0) mathErr();
+      if (b < 0) {
+        if (!Number.isInteger(n) || n % 2 === 0) mathErr();
+        return -Math.pow(-b, 1 / n);
+      }
+      return Math.pow(b, 1 / n);
+    }
+  }
+  synErr();
+};
+
+var MULTI = null;   /* extra values produced by Pol( / Rec( */
+
+function evalToks(toks) {
+  if (!toks || !toks.length) synErr();
+  return new Parser(toks).run();
+}
+
+/* evaluate a whole entry; throws CalcError */
+function evaluate(nodes) {
+  MULTI = null;
+  var v = new Parser(tokenize(nodes)).run();
+  if (typeof v !== 'number' || isNaN(v)) mathErr();
+  if (Math.abs(v) >= 1e100) mathErr();
+  if (Math.abs(v) < 1e-99 && v !== 0) v = 0;
+  return v;
+}
+
+/* ======================================================================
+   7. TURNING A NUMBER BACK INTO A CASIO-LOOKING ANSWER
+   ====================================================================== */
+function stripZeros(s) {
+  if (s.indexOf('.') < 0) return s;
+  s = s.replace(/0+$/, '');
+  if (s.charAt(s.length - 1) === '.') s = s.slice(0, -1);
+  return s;
+}
+
+/* {m:'1.234', e:null|number} */
+function fmtParts(x) {
+  var d = ST.disp, ax = Math.abs(x);
+  if (d.t === 'fix' && ax < 1e10) return { m: x.toFixed(d.n), e: null };
+  if (d.t === 'sci') {
+    var n = d.n === 0 ? 10 : d.n;
+    return expParts(x, n, true);
+  }
+  var lim = (d.t === 'norm' && d.n === 2) ? 1e-9 : 1e-2;
+  if (x !== 0 && (ax >= 1e10 || ax < lim)) return expParts(x, 10, false);
+  return { m: stripZeros(trimTo10(x)), e: null };
+}
+function trimTo10(x) {
+  var s = x.toPrecision(10);
+  if (s.indexOf('e') >= 0) s = Number(s).toString();
+  return s;
+}
+function expParts(x, digits, keepZeros) {
+  var s = x.toExponential(Math.max(0, digits - 1));
+  var i = s.indexOf('e');
+  var m = s.slice(0, i), e = parseInt(s.slice(i + 1), 10);
+  if (!keepZeros) m = stripZeros(m);
+  return { m: m, e: e };
+}
+/* ENG: shift the exponent to a multiple of three */
+function engParts(x, dir) {
+  var p = expParts(x, 10, false);
+  var e = p.e == null ? 0 : p.e;
+  var target = dir < 0 ? Math.ceil((e + 1) / 3) * 3 : Math.floor(e / 3) * 3;
+  if (target === e && dir > 0) target -= 3;
+  var m = stripZeros((x / Math.pow(10, target)).toPrecision(10));
+  return { m: m, e: target === 0 ? null : target };
+}
+/* 12.5 -> 12 d 30 m 0 s */
+function dmsParts(x) {
+  var sign = x < 0 ? '−' : '';
+  var v = Math.abs(x);
+  var d = Math.floor(v);
+  var mf = (v - d) * 60;
+  var m = Math.floor(mf + 1e-9);
+  var s = Math.round(((mf - m) * 60) * 1e4) / 1e4;
+  if (s >= 60) { s -= 60; m++; }
+  if (m >= 60) { m -= 60; d++; }
+  return sign + d + '°' + m + '°' + stripZeros(String(s)) + '°';
+}
+
+/* ---------- exact answers: fractions, pi multiples and surds ---------- */
+function ratApprox(x, maxDen, tol) {
+  if (!isFinite(x) || Math.abs(x) > 1e10) return null;
+  var sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  var h0 = 0, h1 = 1, k0 = 1, k1 = 0, b = x;
+  for (var i = 0; i < 40; i++) {
+    var a = Math.floor(b);
+    var h2 = a * h1 + h0, k2 = a * k1 + k0;
+    if (k2 > maxDen || !isFinite(h2)) break;
+    h0 = h1; h1 = h2; k0 = k1; k1 = k2;
+    if (Math.abs(x - h1 / k1) <= 1e-14 * Math.max(1, x)) break;
+    var fr = b - a;
+    if (fr < 1e-13) break;
+    b = 1 / fr;
+  }
+  if (!k1) return null;
+  if (Math.abs(x - h1 / k1) > (tol || 1e-11) * Math.max(1, x)) return null;
+  return { n: sign * h1, d: k1 };
+}
+function digits(n) { return String(Math.abs(n)).replace('-', '').length; }
+
+function fracNodes(n, d, pre) {
+  var out = [];
+  if (n < 0) { out.push(C('−')); n = -n; }
+  if (ST.mixed && !pre && n > d) {
+    var w = Math.floor(n / d);
+    out.push(MIX(numNodes(w), numNodes(n - w * d), numNodes(d)));
+    return out;
+  }
+  var num = pre ? (n === 1 ? [] : numNodes(n)).concat(pre) : numNodes(n);
+  out.push(FRAC(num, numNodes(d)));
+  return out;
+}
+function numNodes(v) { return String(v).split('').map(C); }
+
+function exactNodes(x, allowIrrational) {
+  if (!isFinite(x) || x === 0) return null;
+  if (Number.isInteger(x)) return null;
+  var r = ratApprox(x, 1e6);
+  if (r && r.d > 1 && digits(r.n) + digits(r.d) <= 10) return fracNodes(r.n, r.d);
+  if (!allowIrrational) return null;
+
+  var t = ratApprox(x / Math.PI, 1000, 1e-12);
+  if (t && Math.abs(t.n) <= 1e5 && Math.abs(x - t.n * Math.PI / t.d) < 1e-12 * Math.max(1, Math.abs(x))) {
+    if (t.d === 1) {
+      var out = [];
+      if (t.n < 0) { out.push(C('−')); t.n = -t.n; }
+      if (t.n !== 1) out = out.concat(numNodes(t.n));
+      out.push(C('π'));
+      return out;
+    }
+    return fracNodes(t.n, t.d, [C('π')]);
+  }
+  for (var b = 2; b <= 400; b++) {
+    var sb = Math.sqrt(b);
+    if (Number.isInteger(sb)) continue;
+    var q = ratApprox(x / sb, 60, 1e-12);
+    if (q && Math.abs(q.n) <= 400 &&
+        Math.abs(x - q.n * sb / q.d) < 1e-12 * Math.max(1, Math.abs(x))) {
+      var rad = [SQRT(numNodes(b))];
+      var head = [];
+      if (q.n < 0) { head.push(C('−')); q.n = -q.n; }
+      var top = (q.n === 1 ? [] : numNodes(q.n)).concat(rad);
+      if (q.d === 1) return head.concat(top);
+      return head.concat([FRAC(top, numNodes(q.d))]);
+    }
+  }
+  return null;
+}
+
+/* Rnd( - drop the digits the display is not showing */
+function roundToDisplay(x) {
+  var d = ST.disp;
+  if (d.t === 'fix') return Number(x.toFixed(d.n));
+  if (d.t === 'sci') return Number(x.toPrecision(d.n === 0 ? 10 : d.n));
+  return Number(x.toPrecision(10));
+}
+
+/* FACT - prime factorisation of a positive integer, as display nodes */
+function factorNodes(x) {
+  if (!Number.isInteger(x) || x < 2 || x > 1e10) return null;
+  var out = [], n = x, f = 2, first = true;
+  while (f * f <= n) {
+    var c = 0;
+    while (n % f === 0) { n /= f; c++; }
+    if (c) {
+      if (!first) out.push(C('×'));
+      out = out.concat(numNodes(f));
+      if (c > 1) out.push(SUP(numNodes(c)));
+      first = false;
+    }
+    f += (f === 2 ? 1 : 2);
+  }
+  if (n > 1) {
+    if (!first) out.push(C('×'));
+    out = out.concat(numNodes(n));
+    first = false;
+  }
+  return first ? null : out;
+}
+
+/* decimal answer as display nodes */
+function decimalNodes(parts) {
+  var out = String(parts.m).replace('-', '−').split('').map(C);
+  if (parts.e != null) {
+    var ex = String(parts.e).replace('-', '−').split('').map(C);
+    out.push(SUP(ex, 'x10'));
+  }
+  return out;
+}
+
+/* ======================================================================
+   8. APPLICATION STATE
+   ====================================================================== */
+var UI = {
+  entry: [],
+  cur: null,
+  shift: false, alpha: false,
+  mode: 'COMP',          /* COMP / STAT / TABLE                        */
+  screen: 'comp',        /* comp / menu / off / table / stat           */
+  result: null,
+  error: null,
+  fresh: false,          /* an answer is on screen, next digit restarts */
+  hist: [], histIdx: 0,
+  pending: null,         /* 'sto' | 'rcl'                              */
+  menu: null,
+  prompt: null,
+  table: null,
+  stat: null,
+  game: null
+};
+UI.cur = { l: UI.entry, i: 0 };
+
+function setEntry(list) { UI.entry = list; UI.cur = { l: UI.entry, i: list.length }; }
+function clearEntry() { UI.entry = []; UI.cur = { l: UI.entry, i: 0 }; }
+
+/* ======================================================================
+   9. EDITING
+   ====================================================================== */
+function insertNode(n, enterSlot) {
+  if (countNodes(UI.entry) > 180) return;      /* the real machine is limited too */
+  UI.cur.l.splice(UI.cur.i, 0, n);
+  UI.cur.i++;
+  var s = subs(n);
+  if (s.length && enterSlot !== false) UI.cur = { l: s[0], i: 0 };
+}
+/* 'sin(' and friends are one token, so DEL removes the whole name at once
+   and the tokenizer can recognise it */
+function insertToken(v) { insertNode(C(v)); }
+
+function doDelete() {
+  if (UI.error) { UI.error = null; return; }
+  if (UI.cur.i > 0) { UI.cur.l.splice(UI.cur.i - 1, 1); UI.cur.i--; return; }
+  var own = findOwner(UI.entry, UI.cur.l);
+  if (!own) return;
+  var lists = subs(own.node);
+  var empty = lists.every(function (L) { return L.length === 0; });
+  UI.cur = { l: own.list, i: own.index };
+  if (empty) own.list.splice(own.index, 1);
+}
+
+function moveCur(dir) {
+  var ps = positions(UI.entry, []);
+  var k = posIndex(ps, UI.cur);
+  if (k < 0) { UI.cur = { l: UI.entry, i: UI.entry.length }; return; }
+  k += dir;
+  if (k < 0 || k >= ps.length) return;
+  UI.cur = { l: ps[k].l, i: ps[k].i };
+}
+
+/* up / down inside a fraction, otherwise replay through past entries */
+function vertical(dir) {
+  var own = findOwner(UI.entry, UI.cur.l);
+  if (own && (own.node.k === 'frac' || own.node.k === 'mix')) {
+    var slots = subs(own.node);
+    var t = own.slot + (dir < 0 ? -1 : 1);
+    if (t >= 0 && t < slots.length) { UI.cur = { l: slots[t], i: slots[t].length }; return; }
+  }
+  replay(dir);
+}
+function replay(dir) {
+  if (!UI.hist.length) return;
+  var i = UI.histIdx + (dir < 0 ? -1 : 1);
+  if (i < 0) i = 0;
+  if (i > UI.hist.length - 1) i = UI.hist.length - 1;
+  UI.histIdx = i;
+  setEntry(clone(UI.hist[i]));
+  UI.result = null; UI.error = null; UI.fresh = false;
+}
+
+/* ======================================================================
+   10. EVALUATION AND THE ANSWER LINE
+   ====================================================================== */
+function makeResult(v, nodes) {
+  var dec = nodes ? hasDecimal(nodes) : true;
+  var ex = exactNodes(v, !dec);
+  var sexa = !!nodes && ST.ang === 'D' && hasDMS(nodes);
+  return { val: v, fact: null, exact: ex, showExact: !!ex && !dec, dms: sexa, eng: null, multi: MULTI };
+}
+function doEquals() {
+  if (!UI.entry.length) return;
+  try {
+    var v = evaluate(UI.entry);
+    ST.ans = v;
+    UI.hist.push(clone(UI.entry));
+    if (UI.hist.length > 30) UI.hist.shift();
+    UI.histIdx = UI.hist.length - 1;
+    UI.result = makeResult(v, UI.entry);
+    UI.error = null;
+    UI.fresh = true;
+    UI.cur = { l: UI.entry, i: UI.entry.length };
+  } catch (e) {
+    UI.error = (e instanceof CalcError) ? e.kind : 'Syntax';
+    UI.result = null;
+  }
+}
+function resultNodes() {
+  var r = UI.result;
+  if (!r) return [];
+  if (r.fact) return r.fact;
+  if (r.dms) return dmsParts(r.val).split('').map(C);
+  if (r.eng) return decimalNodes(r.eng);
+  if (r.showExact && r.exact) return r.exact;
+  return decimalNodes(fmtParts(r.val));
+}
+
+/* ======================================================================
+   11. THE KEYPAD
+   id, label, shift label, alpha label, css class
+   ====================================================================== */
+var BOX = '▫';                       /* the small box the machine prints */
+var SUPBOX = '<sup>' + BOX + '</sup>';
+var IX = '<i>x</i>';
+
+/* the two small keys either side of the replay pad, plus the pad itself */
+var TOPBLOCK = [
+  { id: 'shift', c: 'pill', l: '', w: '<b class="y">SHIFT</b>', gc: 1, gr: 1 },
+  { id: 'alpha', c: 'pill', l: '', w: '<b class="p">ALPHA</b>', gc: 2, gr: 1 },
+  { replay: true },
+  { id: 'mode', c: 'pill', l: '', w: 'MODE <b class="y">SETUP</b>', gc: 5, gr: 1 },
+  { id: 'on', c: 'pill', l: '', w: 'ON', gc: 6, gr: 1 },
+  { id: 'abs', l: 'Abs', gc: 1, gr: 2 },
+  { id: 'cube', l: IX + '<sup>3</sup>', gc: 2, gr: 2 },
+  { id: 'inv', l: IX + '<sup>−1</sup>', s: IX + '!', gc: 5, gr: 2 },
+  { id: 'logb', l: 'log<sub>' + BOX + '</sub>' + BOX, gc: 6, gr: 2 }
+];
+
+var FRACKEY = '<span class="kfr"><em>' + BOX + '</em><em>' + BOX + '</em></span>';
+
+var ROWS6 = [
+  [
+    { id: 'frac', l: FRACKEY, s: 'a' + BOX + '/' + BOX },
+    { id: 'sqrt', l: '√' + BOX, s: '<sup>3</sup>√' + BOX },
+    { id: 'sq', l: IX + '<sup>2</sup>' },
+    { id: 'pow', l: IX + SUPBOX, s: '<sup>' + BOX + '</sup>√' + BOX },
+    { id: 'log', l: 'log', s: '10' + SUPBOX },
+    { id: 'ln', l: 'ln', s: 'e' + SUPBOX }
+  ],
+  [
+    { id: 'negk', l: '(−)', a: 'A' },
+    { id: 'dms', l: '°′″', s: 'FACT', a: 'B' },
+    { id: 'hyp', l: 'hyp', a: 'C' },
+    { id: 'sin', l: 'sin', s: 'sin<sup>−1</sup>', a: 'D' },
+    { id: 'cos', l: 'cos', s: 'cos<sup>−1</sup>', a: 'E' },
+    { id: 'tan', l: 'tan', s: 'tan<sup>−1</sup>', a: 'F' }
+  ],
+  [
+    { id: 'rcl', l: 'RCL', s: 'STO' },
+    { id: 'eng', l: 'ENG', s: '◀' },
+    { id: 'lp', l: '(', s: '%' },
+    { id: 'rp', l: ')', s: ',', a: 'X' },
+    { id: 'sd', l: 'S⇔D', s: 'ab/c', a: 'Y' },
+    { id: 'mplus', l: 'M+', s: 'M−', a: 'M' }
+  ]
+];
+
+var ROWS5 = [
+  [
+    { id: '7', l: '7', c: 'num' }, { id: '8', l: '8', c: 'num' },
+    { id: '9', l: '9', s: 'CLR', c: 'num' },
+    { id: 'del', l: 'DEL', s: 'INS', c: 'acc' }, { id: 'ac', l: 'AC', s: 'OFF', c: 'acc' }
+  ],
+  [
+    { id: '4', l: '4', c: 'num' }, { id: '5', l: '5', c: 'num' }, { id: '6', l: '6', c: 'num' },
+    { id: 'mul', l: '×', s: 'nPr', c: 'op' }, { id: 'div', l: '÷', s: 'nCr', c: 'op' }
+  ],
+  [
+    { id: '1', l: '1', s: 'STAT', c: 'num' }, { id: '2', l: '2', c: 'num' },
+    { id: '3', l: '3', c: 'num' },
+    { id: 'add', l: '+', s: 'Pol(', c: 'op' }, { id: 'sub', l: '−', s: 'Rec(', c: 'op' }
+  ],
+  [
+    { id: '0', l: '0', s: 'Rnd', c: 'num' },
+    { id: 'dot', l: '.', s: 'Ran#', a: 'RanInt', c: 'num' },
+    { id: 'exp', l: '×10<sup>x</sup>', s: 'π', a: 'e', c: 'num' },
+    { id: 'ans', l: 'Ans', s: 'DRG▸', c: 'op' },
+    { id: 'eq', l: '=', c: 'op' }
+  ]
+];
+
+function buildPad() {
+  var pad = $('pad');
+  var fn = el('div', 'fn');
+  TOPBLOCK.forEach(function (k) {
+    if (k.replay) { fn.appendChild(makeReplay()); return; }
+    var b = makeKey(k);
+    b.style.gridColumn = String(k.gc);
+    b.style.gridRow = String(k.gr);
+    fn.appendChild(b);
+  });
+  pad.appendChild(fn);
+  ROWS6.forEach(function (row) { pad.appendChild(makeRow(row, 'row6')); });
+  ROWS5.forEach(function (row) { pad.appendChild(makeRow(row, 'row5')); });
+}
+function makeRow(row, cls) {
+  var r = el('div', cls);
+  row.forEach(function (k) { r.appendChild(makeKey(k)); });
+  return r;
+}
+function makeReplay() {
+  var rp = el('div', 'replay');
+  ['u', 'd', 'l', 'r'].forEach(function (d) {
+    var b = el('div', 'rk ' + d, { u: '▲', d: '▼', l: '◀', r: '▶' }[d]);
+    b.dataset.key = 'rep' + d;
+    rp.appendChild(b);
+  });
+  return rp;
+}
+function makeKey(k) {
+  var b = el('div', 'key' + (k.c ? ' ' + k.c : ''));
+  b.dataset.key = k.id;
+  if (k.w) { var w = el('span', 'wh'); w.innerHTML = k.w; b.appendChild(w); }
+  if (k.s) { var s = el('span', 'sh' + (k.w ? ' rgt' : '')); s.innerHTML = k.s; b.appendChild(s); }
+  if (k.a) { var a = el('span', 'al'); a.innerHTML = k.a; b.appendChild(a); }
+  var l = el('span', 'lb'); l.innerHTML = k.l; b.appendChild(l);
+  return b;
+}
+
+/* ======================================================================
+   12. DISPLAY REFRESH
+   ====================================================================== */
+function indicators() {
+  var out = [];
+  if (UI.shift) out.push('SHIFT');
+  if (UI.alpha) out.push('ALPHA');
+  if (ST.vars.M !== 0) out.push('M');
+  if (UI.pending === 'sto') out.push('STO');
+  if (UI.pending === 'rcl') out.push('RCL');
+  if (UI.mode === 'STAT') out.push('STAT');
+  out.push(ST.ang);
+  if (ST.disp.t === 'fix') out.push('FIX');
+  if (ST.disp.t === 'sci') out.push('SCI');
+  if (ST.math) out.push('Math');
+  return out;
+}
+
+function refresh() {
+  var lcd = $('lcd'), l1 = $('l1i'), l2 = $('l2i'), ind = $('ind');
+  ind.textContent = '';
+  indicators().forEach(function (t) { ind.appendChild(el('span', null, t)); });
+  l1.textContent = ''; l2.textContent = '';
+  lcd.classList.toggle('menu', UI.screen === 'menu' || UI.screen === 'stat' || UI.screen === 'table');
+  $('aleft').classList.add('hide');
+  $('aright').classList.add('hide');
+
+  if (UI.screen === 'off') {
+    ind.textContent = '';
+    $('l1').style.visibility = 'hidden'; $('l2').style.visibility = 'hidden';
+    return;
+  }
+  $('l1').style.visibility = ''; $('l2').style.visibility = '';
+
+  if (UI.screen !== 'game') { var gc = $('gcanvas'); if (gc) gc.classList.add('hide'); }
+  if (UI.screen === 'game') { $('l1').style.visibility = 'hidden'; $('l2').style.visibility = 'hidden'; drawGame(); return; }
+  if (UI.screen === 'menu') { drawMenu(l1, l2); return; }
+  if (UI.screen === 'table') { drawTable(l1, l2); return; }
+  if (UI.screen === 'stat') { drawStat(l1, l2); return; }
+
+  if (UI.error) {
+    l1.appendChild(el('span', null, UI.error + ' ERROR'));
+    l2.appendChild(el('span', null, '[AC]:Cancel [◀][▶]:Goto'));
+    $('l2').style.fontSize = '11px';
+    return;
+  }
+  $('l2').style.fontSize = '';
+
+  if (UI.prompt) {
+    l1.appendChild(el('span', null, UI.prompt.label));
+    l1.appendChild(renderList(UI.entry, UI.cur));
+  } else {
+    l1.appendChild(renderList(UI.entry, UI.cur));
+  }
+  if (UI.result) {
+    var nodes = resultNodes();
+    if (UI.result.multi) {
+      var txt = UI.result.multi.map(function (p) {
+        return p[0] + '=' + stripZeros(trimTo10(p[1]));
+      }).join('  ');
+      $('l2').style.fontSize = '14px';
+      l2.appendChild(el('span', null, txt));
+    } else {
+      l2.appendChild(renderList(nodes, null));
+    }
+  }
+  fitAnswer();
+  scrollToCursor();
+}
+
+/* a fraction answer is two lines tall, so the answer line shrinks to fit,
+   the same way the real display does */
+function fitAnswer() {
+  var l2 = $('l2'), inner = $('l2i');
+  if (!l2 || !inner) return;
+  l2.classList.remove('small');
+  l2.classList.remove('tiny');
+  var room = l2.clientHeight || 36;
+  if (!inner.getBoundingClientRect) return;
+  if (inner.getBoundingClientRect().height <= room) return;
+  l2.classList.add('small');
+  if (inner.getBoundingClientRect().height > room) {
+    l2.classList.remove('small');
+    l2.classList.add('tiny');
+  }
+}
+
+function scrollToCursor() {
+  var wrap = $('l1'), inner = $('l1i');
+  var cur = inner.querySelector('.cur');
+  inner.style.transform = 'none';
+  var vis = wrap.clientWidth - 6;
+  var w = inner.scrollWidth;
+  var x = cur ? cur.offsetLeft : w;
+  var shift = 0;
+  if (w > vis) shift = Math.min(w - vis, Math.max(0, x - vis + 14));
+  inner.style.transform = 'translateX(' + (-shift) + 'px)';
+  if (shift > 0) $('aleft').classList.remove('hide');
+  if (w - shift > vis) $('aright').classList.remove('hide');
+}
+
+/* ======================================================================
+   13. MENUS (MODE, SETUP, DRG)
+   ====================================================================== */
+function openMenu(title, items) {
+  UI.menu = { title: title, items: items };
+  UI.screen = 'menu';
+}
+function closeMenu() {
+  UI.menu = null;
+  UI.screen = UI.mode === 'TABLE' ? 'table' : UI.mode === 'STAT' ? 'stat' : 'comp';
+}
+function drawMenu(l1) {
+  var m = UI.menu;
+  if (m.title) l1.appendChild(el('div', null, m.title));
+  var line = null;
+  m.items.forEach(function (it, i) {
+    if (i % 2 === 0) {
+      line = el('div');
+      line.style.display = 'flex';
+      l1.appendChild(line);
+    }
+    var s = el('span', null, it.n + ':' + it.t);
+    s.style.flex = '1';
+    s.style.paddingRight = '6px';
+    line.appendChild(s);
+  });
+  if (line && (m.more != null || m.back != null)) {
+    var a = el('span', null, (m.back != null ? '◀' : '') + (m.more != null ? '▶' : ''));
+    a.style.marginLeft = 'auto';
+    line.appendChild(a);
+  }
+}
+function menuKey(id) {
+  var m = UI.menu;
+  if (id === 'ac' || id === 'on') { closeMenu(); return; }
+  if (id === 'repr' && m.more != null) { openSetup(m.more); return; }
+  if (id === 'repl' && m.back != null) { openSetup(m.back); return; }
+  var hit = null;
+  m.items.forEach(function (it) { if (it.n === id) hit = it; });
+  if (hit) { closeMenu(); hit.f(); }
+}
+
+function openModeMenu() {
+  openMenu('', [
+    { n: '1', t: 'COMP', f: function () { setMode('COMP'); } },
+    { n: '2', t: 'STAT', f: function () { setMode('STAT'); } },
+    { n: '3', t: 'TABLE', f: function () { setMode('TABLE'); } }
+  ]);
+}
+function setMode(m) {
+  UI.mode = m;
+  allClear();
+  if (m === 'TABLE') { UI.table = { stage: 'expr', fx: null, top: 0, rows: [] }; UI.screen = 'table'; }
+  else if (m === 'STAT') { openStatTypeMenu(); }
+  else UI.screen = 'comp';
+}
+function openSetup(page) {
+  if (page === 1) {
+    openMenu('', [
+      { n: '1', t: 'ab/c', f: function () { ST.mixed = true; } },
+      { n: '2', t: 'd/c', f: function () { ST.mixed = false; } }
+    ]);
+    UI.menu.back = 0;
+    return;
+  }
+  openMenu('', [
+    { n: '1', t: 'MthIO', f: function () { ST.math = true; } },
+    { n: '2', t: 'LineIO', f: function () { ST.math = false; } },
+    { n: '3', t: 'Deg', f: function () { ST.ang = 'D'; } },
+    { n: '4', t: 'Rad', f: function () { ST.ang = 'R'; } },
+    { n: '5', t: 'Gra', f: function () { ST.ang = 'G'; } },
+    { n: '6', t: 'Fix', f: function () { askDigit('Fix 0~9?', function (n) { ST.disp = { t: 'fix', n: n }; }); } },
+    { n: '7', t: 'Sci', f: function () { askDigit('Sci 0~9?', function (n) { ST.disp = { t: 'sci', n: n }; }); } },
+    { n: '8', t: 'Norm', f: function () { askDigit('Norm 1~2?', function (n) { ST.disp = { t: 'norm', n: n === 2 ? 2 : 1 }; }); } }
+  ]);
+  UI.menu.more = 1;
+}
+/* Fix / Sci / Norm ask for one more digit before they take effect */
+function askDigit(label, f) {
+  UI.menu = { title: label, items: [], digits: f };
+  UI.screen = 'menu';
+}
+function openClrMenu() {
+  openMenu('', [
+    { n: '1', t: 'Setup', f: function () { ST.ang = 'D'; ST.disp = { t: 'norm', n: 1 }; ST.math = true; ST.mixed = false; } },
+    { n: '2', t: 'Memory', f: clearMemory },
+    { n: '3', t: 'All', f: function () { clearMemory(); UI.hist = []; allClear(); } }
+  ]);
+}
+function clearMemory() {
+  for (var k in ST.vars) ST.vars[k] = 0;
+  ST.ans = 0;
+}
+function openDrgMenu() {
+  openMenu('', [
+    { n: '1', t: '°', f: function () { insertToken('°'); } },
+    { n: '2', t: 'ʳ', f: function () { insertToken('ʳ'); } },
+    { n: '3', t: 'ᵍ', f: function () { insertToken('ᵍ'); } }
+  ]);
+}
+
+/* ======================================================================
+   14. TABLE MODE
+   ====================================================================== */
+function drawTable(l1) {
+  var t = UI.table;
+  if (t.stage === 'expr') {
+    l1.appendChild(el('div', null, 'f(X)='));
+    var d = el('div');
+    d.appendChild(renderList(UI.entry, UI.cur));
+    l1.appendChild(d);
+    return;
+  }
+  if (t.stage !== 'view') {
+    l1.appendChild(el('div', null, { start: 'Start?', end: 'End?', step: 'Step?' }[t.stage]));
+    var e = el('div');
+    e.appendChild(renderList(UI.entry, UI.cur));
+    l1.appendChild(e);
+    return;
+  }
+  var head = el('div');
+  head.appendChild(colSpan('X', true));
+  head.appendChild(colSpan('F(X)', true));
+  l1.appendChild(head);
+  for (var i = t.top; i < Math.min(t.rows.length, t.top + 3); i++) {
+    var r = el('div');
+    if (i === t.sel) r.style.fontWeight = '700';
+    r.appendChild(colSpan(t.rows[i][0]));
+    r.appendChild(colSpan(t.rows[i][1]));
+    l1.appendChild(r);
+  }
+}
+function colSpan(txt, head) {
+  var s = el('span', null, txt);
+  s.style.display = 'inline-block';
+  s.style.width = '50%';
+  s.style.overflow = 'hidden';
+  if (head) s.style.borderBottom = '1px solid currentColor';
+  return s;
+}
+function tableNext() {
+  var t = UI.table;
+  if (t.stage === 'expr') {
+    if (!UI.entry.length) return;
+    t.fx = clone(UI.entry);
+    t.stage = 'start'; clearEntry(); return;
+  }
+  var v;
+  try { v = evaluate(UI.entry); } catch (e) { UI.error = 'Syntax'; return; }
+  if (t.stage === 'start') { t.start = v; t.stage = 'end'; clearEntry(); return; }
+  if (t.stage === 'end') { t.end = v; t.stage = 'step'; clearEntry(); return; }
+  if (t.stage === 'step') {
+    t.step = v;
+    if (v === 0) { UI.error = 'Math'; return; }
+    buildTable();
+    clearEntry();
+    t.stage = 'view'; t.top = 0; t.sel = 0;
+  }
+}
+function buildTable() {
+  var t = UI.table, rows = [], saveX = ST.vars.X;
+  var n = Math.floor((t.end - t.start) / t.step) + 1;
+  if (n < 1) n = 1;
+  if (n > 30) n = 30;
+  for (var i = 0; i < n; i++) {
+    var x = t.start + i * t.step;
+    ST.vars.X = x;
+    var y;
+    try { y = stripZeros(trimTo10(evaluate(t.fx))); } catch (e) { y = 'ERROR'; }
+    rows.push([stripZeros(trimTo10(x)), y]);
+  }
+  ST.vars.X = saveX;
+  t.rows = rows;
+}
+function tableKey(id) {
+  var t = UI.table;
+  if (id === 'repu') { if (t.sel > 0) t.sel--; if (t.sel < t.top) t.top = t.sel; return; }
+  if (id === 'repd') { if (t.sel < t.rows.length - 1) t.sel++; if (t.sel > t.top + 2) t.top = t.sel - 2; return; }
+  if (id === 'ac') { t.stage = 'expr'; setEntry(t.fx ? clone(t.fx) : []); return; }
+  if (id === 'mode') { openModeMenu(); return; }
+}
+
+/* ======================================================================
+   15. STAT MODE  (1-VAR and A+BX)
+   ====================================================================== */
+function openStatTypeMenu() {
+  openMenu('', [
+    { n: '1', t: '1-VAR', f: function () { startStat('1var'); } },
+    { n: '2', t: 'A+BX', f: function () { startStat('reg'); } }
+  ]);
+}
+function startStat(type) {
+  UI.stat = { type: type, rows: [], r: 0, c: 0, buf: '', top: 0, view: 'data', lines: [], sTop: 0 };
+  UI.screen = 'stat';
+}
+function drawStat(l1) {
+  var s = UI.stat;
+  if (s.view === 'res') {
+    for (var i = s.sTop; i < Math.min(s.lines.length, s.sTop + 4); i++) {
+      l1.appendChild(el('div', null, s.lines[i]));
+    }
+    return;
+  }
+  var cols = s.type === 'reg' ? ['x', 'y'] : ['x'];
+  var head = el('div');
+  cols.forEach(function (c) { head.appendChild(statCell(c, true)); });
+  l1.appendChild(head);
+  var total = s.rows.length + 1;
+  for (var r = s.top; r < Math.min(total, s.top + 3); r++) {
+    var line = el('div');
+    for (var c = 0; c < cols.length; c++) {
+      var txt = '';
+      if (r < s.rows.length) txt = stripZeros(trimTo10(s.rows[r][c]));
+      if (r === s.r && c === s.c) {
+        txt = s.buf !== '' ? s.buf : txt;
+        var cell = statCell(txt + '_');
+        cell.style.fontWeight = '700';
+        line.appendChild(cell);
+      } else line.appendChild(statCell(txt));
+    }
+    l1.appendChild(line);
+  }
+  l1.appendChild(el('div', null, '[SHIFT][1]:stats  [=]:enter'));
+}
+function statCell(txt, head) {
+  var s = el('span', null, txt);
+  s.style.display = 'inline-block';
+  s.style.width = '46%';
+  s.style.marginRight = '4%';
+  s.style.overflow = 'hidden';
+  if (head) s.style.borderBottom = '1px solid currentColor';
+  return s;
+}
+function statCommit() {
+  var s = UI.stat;
+  if (s.buf === '') return false;
+  var v = parseFloat(s.buf.replace('−', '-'));
+  if (isNaN(v)) { s.buf = ''; return false; }
+  while (s.rows.length <= s.r) s.rows.push(s.type === 'reg' ? [0, 0] : [0]);
+  s.rows[s.r][s.c] = v;
+  s.buf = '';
+  return true;
+}
+function statKey(id, sh) {
+  var s = UI.stat;
+  if (s.view === 'res') {
+    if (id === 'repu' && s.sTop > 0) s.sTop--;
+    else if (id === 'repd' && s.sTop < s.lines.length - 4) s.sTop++;
+    else if (id === 'ac' || id === 'eq') s.view = 'data';
+    else if (id === 'mode') openModeMenu();
+    return;
+  }
+  if (sh && id === '1') { statResults(); return; }
+  if (id === 'mode') { openModeMenu(); return; }
+  if (id >= '0' && id <= '9') { s.buf += id; return; }
+  if (id === 'dot') { if (s.buf.indexOf('.') < 0) s.buf += '.'; return; }
+  if (id === 'negk') { s.buf = s.buf.charAt(0) === '−' ? s.buf.slice(1) : '−' + s.buf; return; }
+  if (id === 'del') { if (s.buf) s.buf = s.buf.slice(0, -1); else if (s.rows.length && s.r < s.rows.length) s.rows.splice(s.r, 1); return; }
+  if (id === 'ac') { s.buf = ''; return; }
+  if (id === 'eq' || id === 'repd') {
+    statCommit();
+    if (s.r < 79) s.r++;
+    if (s.r > s.top + 2) s.top = s.r - 2;
+    return;
+  }
+  if (id === 'repu') { statCommit(); if (s.r > 0) s.r--; if (s.r < s.top) s.top = s.r; return; }
+  if (id === 'repr' && s.type === 'reg') { statCommit(); s.c = 1; return; }
+  if (id === 'repl' && s.type === 'reg') { statCommit(); s.c = 0; return; }
+}
+function statResults() {
+  var s = UI.stat;
+  statCommit();
+  var n = s.rows.length;
+  var L = [];
+  if (!n) { L.push('no data'); }
+  else {
+    var sx = 0, sx2 = 0, sy = 0, sy2 = 0, sxy = 0;
+    s.rows.forEach(function (r) {
+      sx += r[0]; sx2 += r[0] * r[0];
+      if (s.type === 'reg') { sy += r[1]; sy2 += r[1] * r[1]; sxy += r[0] * r[1]; }
+    });
+    var mx = sx / n;
+    var pvar = sx2 / n - mx * mx;
+    var sdp = Math.sqrt(Math.max(0, pvar));
+    var sds = n > 1 ? Math.sqrt(Math.max(0, (sx2 - n * mx * mx) / (n - 1))) : 0;
+    var num = function (v) { return stripZeros(trimTo10(v)); };
+    L.push('n   = ' + n);
+    L.push('x̄   = ' + num(mx));
+    L.push('σx  = ' + num(sdp));
+    L.push('sx  = ' + num(sds));
+    L.push('Σx  = ' + num(sx));
+    L.push('Σx² = ' + num(sx2));
+    if (s.type === 'reg') {
+      var my = sy / n;
+      L.push('ȳ   = ' + num(my));
+      L.push('σy  = ' + num(Math.sqrt(Math.max(0, sy2 / n - my * my))));
+      L.push('Σy  = ' + num(sy));
+      L.push('Σy² = ' + num(sy2));
+      L.push('Σxy = ' + num(sxy));
+      var den = n * sx2 - sx * sx;
+      var B = den ? (n * sxy - sx * sy) / den : 0;
+      var A = my - B * mx;
+      var rr = Math.sqrt(Math.max(0, (n * sxy - sx * sy) * (n * sxy - sx * sy) /
+        Math.max(1e-300, den * (n * sy2 - sy * sy))));
+      if ((n * sxy - sx * sy) < 0) rr = -rr;
+      L.push('A   = ' + num(A));
+      L.push('B   = ' + num(B));
+      L.push('r   = ' + num(rr));
+    }
+  }
+  s.lines = L; s.view = 'res'; s.sTop = 0;
+}
+
+/* ======================================================================
+   16. KEY DISPATCH
+   ====================================================================== */
+var ALPHAMAP = { negk: 'A', dms: 'B', hyp: 'C', sin: 'D', cos: 'E', tan: 'F', rp: 'X', sd: 'Y', mplus: 'M', exp: 'e' };
+var VARMAP = { negk: 'A', dms: 'B', hyp: 'C', sin: 'D', cos: 'E', tan: 'F', rp: 'X', sd: 'Y', mplus: 'M' };
+var CONTINUES = { add: 1, sub: 1, mul: 1, div: 1, pow: 1, sq: 1, inv: 1, fact: 1, lp: 0 };
+
+function allClear() {
+  clearEntry();
+  UI.result = null; UI.error = null; UI.fresh = false; UI.pending = null; UI.hyp = false;
+  if (UI.prompt) UI.prompt = null;
+}
+function startEntry(id) {
+  if (!UI.fresh) return;
+  UI.fresh = false;
+  UI.result = null;
+  if (CONTINUES[id]) { setEntry([C('Ans')]); }
+  else clearEntry();
+}
+
+function press(id) {
+  if (UI.screen === 'off') { if (id === 'on') { UI.screen = 'comp'; refresh(); } return; }
+  var sh = UI.shift, al = UI.alpha;
+  if (id !== 'shift' && id !== 'alpha') { UI.shift = false; UI.alpha = false; }
+
+  if (id === 'shift') { UI.shift = !sh; UI.alpha = false; refresh(); return; }
+  if (id === 'alpha') { UI.alpha = !al; UI.shift = false; refresh(); return; }
+
+  if (UI.screen === 'game') { gameKey(id); refresh(); return; }
+  if (watchSecret(id)) { openGameMenu(); refresh(); return; }
+
+  if (UI.screen === 'menu') {
+    if (UI.menu.digits && id >= '0' && id <= '9') { var f = UI.menu.digits; closeMenu(); f(parseInt(id, 10)); }
+    else menuKey(id);
+    refresh(); return;
+  }
+  if (UI.screen === 'stat') { statKey(id, sh); refresh(); return; }
+  if (UI.screen === 'table' && UI.table.stage === 'view') { tableKey(id); refresh(); return; }
+
+  compKey(id, sh, al);
+  refresh();
+}
+
+function compKey(id, sh, al) {
+  /* error state: the arrows go back to the expression, everything else clears */
+  if (UI.error) {
+    if (id === 'repl' || id === 'repr') { UI.error = null; return; }
+    if (id === 'ac' || id === 'on') { allClear(); return; }
+    UI.error = null;
+  }
+  if (al && ALPHAMAP[id]) { startEntry(id); insertToken(ALPHAMAP[id]); return; }
+  if (UI.pending && VARMAP[id]) {
+    var v = VARMAP[id];
+    if (UI.pending === 'sto') { ST.vars[v] = UI.result ? UI.result.val : ST.ans; UI.result = makeResult(ST.vars[v], null); }
+    else { setEntry([C(v)]); UI.result = makeResult(ST.vars[v], null); UI.fresh = true; }
+    UI.pending = null;
+    return;
+  }
+  UI.pending = null;
+
+  /* the yellow labels printed over three of the number keys */
+  if (sh && id === '9') { openClrMenu(); return; }
+  if (sh && id === '1') { if (UI.mode === 'STAT') statResults(); return; }
+  if (sh && id === '0') { startEntry(id); insertToken('Rnd('); return; }
+  if (al && id === 'dot') { startEntry(id); insertToken('RanInt#('); return; }
+
+  if (id >= '0' && id <= '9') { startEntry(id); insertToken(id); return; }
+
+  switch (id) {
+    case 'abs': startEntry(id); insertToken('Abs('); return;
+    case 'cube': startEntry(id); insertNode(SUP([C('3')]), false); return;
+    case 'logb': startEntry(id); insertNode(LOGB()); return;
+    case 'on': allClear(); UI.mode = 'COMP'; UI.screen = 'comp'; return;
+    case 'ac':
+      if (sh) { UI.screen = 'off'; return; }
+      allClear(); return;
+    case 'mode':
+      if (sh) openSetup(0); else openModeMenu();
+      return;
+    case 'del': doDelete(); return;
+    case 'repl': moveCur(-1); return;
+    case 'repr': moveCur(1); return;
+    case 'repu': vertical(-1); return;
+    case 'repd': vertical(1); return;
+
+    case 'dot': startEntry(id); if (sh) insertToken('Ran#'); else insertToken('.'); return;
+    case 'exp':
+      startEntry(id);
+      if (sh) insertToken('π');
+      else insertNode(SUP([], 'x10'));
+      return;
+    case 'ans':
+      if (sh) { openDrgMenu(); return; }
+      startEntry(id); insertToken('Ans'); return;
+
+    case 'add': startEntry(id); if (sh) insertToken('Pol('); else insertToken('+'); return;
+    case 'sub': startEntry(id); if (sh) insertToken('Rec('); else insertToken('−'); return;
+    case 'mul': startEntry(id); if (sh) insertToken('nPr'); else insertToken('×'); return;
+    case 'div': startEntry(id); if (sh) insertToken('nCr'); else insertToken('÷'); return;
+    case 'negk': startEntry(id); insertToken('-'); return;
+
+    case 'lp': startEntry(id); if (sh) insertToken('%'); else insertToken('('); return;
+    case 'rp': startEntry(id); if (sh) insertToken(','); else insertToken(')'); return;
+
+    case 'frac':
+      startEntry(id);
+      insertNode(sh ? MIX() : FRAC());
+      return;
+    case 'sqrt':
+      startEntry(id);
+      if (sh) { var r = ROOT([C('3')], []); UI.cur.l.splice(UI.cur.i, 0, r); UI.cur = { l: r.a, i: 0 }; }
+      else insertNode(SQRT());
+      return;
+    case 'sq': startEntry(id); insertNode(SUP([C(sh ? '3' : '2')]), false); return;
+    case 'inv':
+      startEntry(id);
+      if (sh) insertToken('!');
+      else insertNode(SUP([C('-'), C('1')]), false);
+      return;
+    case 'pow':
+      startEntry(id);
+      if (sh) insertNode(ROOT());
+      else insertNode(SUP());
+      return;
+    case 'log': startEntry(id); if (sh) insertNode(SUP([], '10')); else insertToken('log('); return;
+    case 'ln': startEntry(id); if (sh) insertNode(SUP([], 'e')); else insertToken('ln('); return;
+
+    case 'hyp': UI.hyp = !UI.hyp; return;
+    case 'sin': case 'cos': case 'tan': {
+      startEntry(id);
+      var base = id + (UI.hyp ? 'h' : '');
+      insertToken(base + (sh ? '⁻¹' : '') + '(');
+      UI.hyp = false;
+      return;
+    }
+    case 'rcl': UI.pending = sh ? 'sto' : 'rcl'; return;
+
+    case 'dms':
+      if (sh) {
+        if (UI.result) {
+          var fn = factorNodes(UI.result.val);
+          if (fn) UI.result.fact = fn; else UI.error = 'Math';
+        }
+        return;
+      }
+      startEntry(id); insertToken('°'); return;
+
+    case 'eng':
+      if (!UI.result) return;
+      UI.result.eng = engParts(UI.result.val, sh ? -1 : 1);
+      UI.result.showExact = false;
+      return;
+
+    case 'sd':
+      if (sh) { ST.mixed = !ST.mixed; if (UI.result) UI.result.exact = exactNodes(UI.result.val, true); return; }
+      if (!UI.result) return;
+      if (UI.result.fact) { UI.result.fact = null; return; }
+      if (UI.result.eng) { UI.result.eng = null; return; }
+      if (UI.result.dms) { UI.result.dms = false; return; }
+      if (UI.result.exact) UI.result.showExact = !UI.result.showExact;
+      else {
+        var ex = exactNodes(UI.result.val, false);
+        if (ex) { UI.result.exact = ex; UI.result.showExact = true; }
+      }
+      return;
+
+    case 'mplus': {
+      var val;
+      if (UI.entry.length) {
+        try { val = evaluate(UI.entry); } catch (e) { UI.error = (e instanceof CalcError) ? e.kind : 'Syntax'; return; }
+      } else val = UI.result ? UI.result.val : ST.ans;
+      ST.vars.M += (sh ? -val : val);
+      UI.result = makeResult(val, UI.entry.length ? UI.entry : null);
+      UI.fresh = true;
+      return;
+    }
+
+    case 'eq':
+      if (UI.mode === 'TABLE') { tableNext(); return; }
+      doEquals();
+      return;
+  }
+}
+
+/* ======================================================================
+   15b. THE HIDDEN GAMES
+   Tap the replay pad UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT and a game
+   menu appears on the display. Everything is drawn as square dots so it
+   looks like it belongs on the LCD.
+   ====================================================================== */
+var SECRET = ['repu', 'repu', 'repd', 'repd', 'repl', 'repr', 'repl', 'repr'];
+var keyTrail = [];
+
+function watchSecret(id) {
+  keyTrail.push(id);
+  if (keyTrail.length > SECRET.length) keyTrail.shift();
+  if (keyTrail.length < SECRET.length) return false;
+  for (var i = 0; i < SECRET.length; i++) if (keyTrail[i] !== SECRET[i]) return false;
+  keyTrail = [];
+  return true;
+}
+
+function openGameMenu() {
+  stopGame();
+  openMenu('GAME', [
+    { n: '1', t: 'SNAKE', f: function () { startGame('snake'); } },
+    { n: '2', t: 'BRICKS', f: function () { startGame('bricks'); } }
+  ]);
+}
+
+var GW = 44, GH = 13, CELL = 7;      /* the dot grid, in LCD dots */
+
+function gameCanvas() {
+  var c = $('gcanvas');
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.id = 'gcanvas';
+  c.className = 'gcanvas';
+  c.width = GW * CELL * 2;
+  c.height = GH * CELL * 2;
+  var lcd = $('lcd');
+  if (lcd) lcd.appendChild(c);
+  return c;
+}
+
+function startGame(kind) {
+  stopGame();
+  var g = { kind: kind, score: 0, over: false, paused: false };
+  if (kind === 'snake') {
+    g.body = [[8, 6], [7, 6], [6, 6]];
+    g.dir = [1, 0];
+    g.turn = [1, 0];
+    placeFood(g);
+    g.speed = 130;
+  } else {
+    g.padX = GW / 2 - 3;
+    g.padW = 7;
+    g.ball = { x: GW / 2, y: GH - 3, vx: 0.34, vy: -0.34 };
+    g.lives = 3;
+    g.bricks = [];
+    for (var r = 0; r < 3; r++) {
+      var row = [];
+      for (var c = 0; c < GW / 4; c++) row.push(1);
+      g.bricks.push(row);
+    }
+    g.speed = 45;
+  }
+  UI.game = g;
+  UI.screen = 'game';
+  g.timer = setInterval(gameTick, g.speed);
+}
+
+function stopGame() {
+  if (UI.game && UI.game.timer) clearInterval(UI.game.timer);
+  UI.game = null;
+  var c = $('gcanvas');
+  if (c) c.classList.add('hide');
+}
+
+function placeFood(g) {
+  for (var tries = 0; tries < 200; tries++) {
+    var x = Math.floor(Math.random() * GW), y = Math.floor(Math.random() * GH);
+    var clash = false;
+    for (var i = 0; i < g.body.length; i++) {
+      if (g.body[i][0] === x && g.body[i][1] === y) { clash = true; break; }
+    }
+    if (!clash) { g.food = [x, y]; return; }
+  }
+  g.food = [0, 0];
+}
+
+function gameTick() {
+  var g = UI.game;
+  if (!g || g.over || g.paused) return;
+  if (g.kind === 'snake') snakeStep(g); else bricksStep(g);
+  drawGame();
+}
+
+function snakeStep(g) {
+  g.dir = g.turn;
+  var head = [g.body[0][0] + g.dir[0], g.body[0][1] + g.dir[1]];
+  if (head[0] < 0 || head[1] < 0 || head[0] >= GW || head[1] >= GH) { gameOver(g); return; }
+  for (var i = 0; i < g.body.length - 1; i++) {
+    if (g.body[i][0] === head[0] && g.body[i][1] === head[1]) { gameOver(g); return; }
+  }
+  g.body.unshift(head);
+  if (head[0] === g.food[0] && head[1] === g.food[1]) {
+    g.score++;
+    placeFood(g);
+    if (g.speed > 60 && g.score % 4 === 0) {
+      g.speed -= 8;
+      clearInterval(g.timer);
+      g.timer = setInterval(gameTick, g.speed);
+    }
+  } else g.body.pop();
+}
+
+function bricksStep(g) {
+  var b = g.ball;
+  b.x += b.vx;
+  b.y += b.vy;
+  if (b.x < 0) { b.x = 0; b.vx = -b.vx; }
+  if (b.x > GW - 1) { b.x = GW - 1; b.vx = -b.vx; }
+  if (b.y < 0) { b.y = 0; b.vy = -b.vy; }
+
+  /* bricks live in the top three rows, four dots wide each */
+  var br = Math.floor(b.y), bc = Math.floor(b.x / 4);
+  if (br >= 0 && br < g.bricks.length && g.bricks[br][bc]) {
+    g.bricks[br][bc] = 0;
+    g.score += 10;
+    b.vy = -b.vy;
+    var left = 0;
+    g.bricks.forEach(function (row) { row.forEach(function (v) { left += v; }); });
+    if (!left) { g.over = true; g.won = true; }
+  }
+
+  if (b.y >= GH - 2 && b.y <= GH - 1) {
+    if (b.x >= g.padX - 0.5 && b.x <= g.padX + g.padW + 0.5) {
+      b.vy = -Math.abs(b.vy);
+      b.vx += (b.x - (g.padX + g.padW / 2)) * 0.06;
+      if (b.vx > 0.6) b.vx = 0.6;
+      if (b.vx < -0.6) b.vx = -0.6;
+    }
+  }
+  if (b.y > GH - 1) {
+    g.lives--;
+    if (g.lives <= 0) { gameOver(g); return; }
+    b.x = GW / 2; b.y = GH - 3; b.vx = 0.34; b.vy = -0.34;
+  }
+}
+
+function gameOver(g) {
+  g.over = true;
+  clearInterval(g.timer);
+  g.timer = null;
+}
+
+/* ---------- drawing ---------- */
+function drawGame() {
+  var g = UI.game;
+  if (!g) return;
+  var c = gameCanvas();
+  c.classList.remove('hide');
+  var x = c.getContext ? c.getContext('2d') : null;
+  if (!x) return;
+  x.setTransform(2, 0, 0, 2, 0, 0);
+  x.clearRect(0, 0, GW * CELL, GH * CELL);
+  x.fillStyle = '#131b1c';
+
+  function dot(cx, cy) {
+    x.fillRect(Math.round(cx) * CELL + 1, Math.round(cy) * CELL + 1, CELL - 2, CELL - 2);
+  }
+
+  if (g.kind === 'snake') {
+    g.body.forEach(function (p) { dot(p[0], p[1]); });
+    if (g.food && (Date.now() % 400 < 300)) dot(g.food[0], g.food[1]);
+  } else {
+    g.bricks.forEach(function (row, r) {
+      row.forEach(function (v, c2) {
+        if (!v) return;
+        x.fillRect(c2 * 4 * CELL + 1, r * CELL + 1, 4 * CELL - 3, CELL - 2);
+      });
+    });
+    for (var i = 0; i < g.padW; i++) dot(g.padX + i, GH - 1);
+    dot(g.ball.x, g.ball.y);
+  }
+
+  x.font = 'bold 9px "DejaVu Sans", Arial, sans-serif';
+  x.fillText(String(g.score), 2, 9);
+  if (g.kind === 'bricks' && !g.over) {
+    for (var L = 0; L < g.lives; L++) x.fillRect(GW * CELL - 8 - L * 7, 3, 5, 5);
+  }
+  if (g.over) {
+    var msg = g.won ? 'CLEARED  ' + g.score : 'GAME OVER  ' + g.score;
+    x.font = 'bold 13px "DejaVu Sans", Arial, sans-serif';
+    var w = x.measureText(msg).width;
+    x.clearRect((GW * CELL - w) / 2 - 6, GH * CELL / 2 - 12, w + 12, 22);
+    x.fillText(msg, (GW * CELL - w) / 2, GH * CELL / 2 + 4);
+  }
+}
+
+function gameKey(id) {
+  var g = UI.game;
+  if (!g) return;
+  if (id === 'ac' || id === 'on' || id === 'mode') {
+    stopGame();
+    UI.screen = 'comp';
+    if (id === 'mode') openModeMenu();
+    return;
+  }
+  if (g.over && (id === 'eq' || id === 'del')) { startGame(g.kind); return; }
+  if (id === 'eq') { g.paused = !g.paused; return; }
+
+  if (g.kind === 'snake') {
+    if (id === 'repu' && g.dir[1] === 0) g.turn = [0, -1];
+    if (id === 'repd' && g.dir[1] === 0) g.turn = [0, 1];
+    if (id === 'repl' && g.dir[0] === 0) g.turn = [-1, 0];
+    if (id === 'repr' && g.dir[0] === 0) g.turn = [1, 0];
+  } else {
+    if (id === 'repl') g.padX = Math.max(0, g.padX - 3);
+    if (id === 'repr') g.padX = Math.min(GW - g.padW, g.padX + 3);
+    drawGame();
+  }
+}
+
+/* ======================================================================
+   17. PHYSICAL KEYBOARD
+   ====================================================================== */
+var KEYMAP = {
+  '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+  '.': 'dot', ',': 'dot', '+': 'add', '-': 'sub', '*': 'mul', 'x': 'mul', '/': 'div',
+  '=': 'eq', 'Enter': 'eq', 'Backspace': 'del', 'Escape': 'ac', 'Delete': 'ac',
+  '(': 'lp', ')': 'rp', '^': 'pow', '!': 'fact',
+  'ArrowLeft': 'repl', 'ArrowRight': 'repr', 'ArrowUp': 'repu', 'ArrowDown': 'repd',
+  's': 'sin', 'c': 'cos', 't': 'tan', 'l': 'log', 'n': 'ln', 'r': 'sqrt', 'f': 'frac',
+  'a': 'ans', 'e': 'exp', 'q': 'sq', 'i': 'inv', 'd': 'sd', 'h': 'hyp'
+};
+var SHIFTED = { 'p': 'exp', '%': 'lp' };   /* pi and % need SHIFT on the machine */
+
+function onKeyDown(ev) {
+  if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+  var id = KEYMAP[ev.key];
+  if (!id && SHIFTED[ev.key]) { UI.shift = true; id = SHIFTED[ev.key]; }
+  if (!id) return;
+  ev.preventDefault();
+  flash(id);
+  press(id);
+}
+function flash(id) {
+  var k = document.querySelector('[data-key="' + id + '"]');
+  if (!k) return;
+  k.classList.add('down');
+  setTimeout(function () { k.classList.remove('down'); }, 110);
+}
+
+/* ======================================================================
+   18. INSTALL / OFFLINE
+   ====================================================================== */
+var deferredPrompt = null;
+var swReady = false;
+
+function isStandalone() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    navigator.standalone === true;
+}
+function isIOS() {
+  var ua = navigator.userAgent || '';
+  return /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isAndroid() { return /Android/.test(navigator.userAgent || ''); }
+
+function updateInstallButton() {
+  var txt = $('installTxt'), btn = $('installBtn');
+  if (!txt) return;
+  if (isStandalone()) {
+    btn.classList.remove('primary');
+    txt.textContent = swReady ? 'Installed — works offline' : 'Installed';
+  } else if (deferredPrompt) {
+    txt.textContent = 'Install on phone';
+  } else {
+    txt.textContent = 'Add to home screen';
+  }
+}
+
+function openSheet(html) {
+  $('sheet').innerHTML = html;
+  $('scrim').classList.add('show');
+}
+function closeSheet() { $('scrim').classList.remove('show'); }
+
+var IOS_SHARE = '<svg class="ios-share" viewBox="0 0 24 24" fill="none" stroke="#5aa9ff" ' +
+  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v8h14v-8"/></svg>';
+
+function installSheetHtml() {
+  var offline = swReady
+    ? '<p><span class="dot ok inl"></span> ' +
+      'Offline copy is stored on this device — the calculator opens with no network.</p>'
+    : '<p>Keep this page open for a moment so the offline copy can finish downloading.</p>';
+
+  if (isStandalone()) {
+    return '<h2>Already installed</h2>' + offline +
+      '<p>You are running the installed app right now. It launches from your home screen and ' +
+      'needs no connection.</p>' +
+      '<div class="btn" data-close="1">Close</div>';
+  }
+  if (isIOS()) {
+    return '<h2>Add to your iPhone / iPad</h2>' +
+      '<p>iOS installs web apps from Safari\'s share menu.</p>' +
+      '<ol>' +
+      '<li>Open this page in <b>Safari</b> (not Chrome).</li>' +
+      '<li>Tap the <b>Share</b> button ' + IOS_SHARE + ' in the toolbar.</li>' +
+      '<li>Scroll down and tap <b>Add to Home Screen</b>.</li>' +
+      '<li>Tap <b>Add</b>. The calculator appears as an app icon.</li>' +
+      '</ol>' + offline +
+      '<div class="btn" data-close="1">Got it</div>';
+  }
+  if (isAndroid()) {
+    return '<h2>Add to your Android home screen</h2>' +
+      '<ol>' +
+      '<li>Tap the <b>⋮</b> menu in Chrome.</li>' +
+      '<li>Choose <b>Install app</b> or <b>Add to Home screen</b>.</li>' +
+      '<li>Confirm with <b>Install</b>.</li>' +
+      '</ol>' + offline +
+      '<div class="btn" data-close="1">Got it</div>';
+  }
+  return '<h2>Install this calculator</h2>' +
+    '<p>On a desktop browser use the install icon in the address bar. On a phone, open this ' +
+    'page and use the browser menu: <b>Install app</b> on Android, <b>Share &rarr; Add to Home ' +
+    'Screen</b> on iOS Safari.</p>' + offline +
+    '<div class="btn" data-close="1">Close</div>';
+}
+
+function onInstallClick() {
+  if (deferredPrompt && !isStandalone()) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function () {
+      deferredPrompt = null;
+      updateInstallButton();
+    });
+    return;
+  }
+  openSheet(installSheetHtml());
+}
+
+function helpSheetHtml() {
+  function row(a, b) { return '<tr><td>' + a + '</td><td>' + b + '</td></tr>'; }
+  return '<h2>fx-82 WEB</h2>' +
+    '<p>A browser copy of a Casio fx-82ES PLUS (2nd edition): natural display, the same ' +
+    'priority table, the same exact answers.</p>' +
+    '<h3>Entering</h3><table class="tbl">' +
+    row('SHIFT then a key', 'the yellow label above it') +
+    row('ALPHA then a key', 'the pink label (variables A–F, X, Y, M)') +
+    row('Replay pad', 'move the cursor, and up/down to recall earlier entries') +
+    row('S⇔D', 'switch the answer between exact and decimal') +
+    row('SHIFT then RCL', 'STO — store the answer in a variable') +
+    row('SHIFT then MODE', 'SETUP: MthIO, angle unit, Fix / Sci / Norm, ab/c') +
+    row('MODE', 'COMP, STAT (1-VAR, A+BX) and TABLE') +
+    '</table>' +
+    '<h3>Computer keyboard</h3><table class="tbl">' +
+    row('0–9 . + − * /', 'the same keys') +
+    row('Enter', '=') +
+    row('Backspace / Esc', 'DEL / AC') +
+    row('Arrows', 'replay pad') +
+    row('s c t l n r f', 'sin cos tan log ln √ fraction') +
+    row('^ ! ( ) a e p q i d', 'power, x!, brackets, Ans, ×10ˣ, π, x², x⁻¹, S⇔D') +
+    '</table>' +
+    '<h3>Hidden games</h3>' +
+    '<p>On the replay pad tap <b>up up down down left right left right</b> and a game menu ' +
+    'appears on the display: 1 for SNAKE, 2 for BRICKS. The pad steers, <b>=</b> pauses, ' +
+    '<b>AC</b> goes back to calculating.</p>' +
+    '<h3>Worth knowing</h3>' +
+    '<p>Implied multiplication binds tighter than ÷ only in front of π, e, variables, Ans ' +
+    'and functions, exactly as the ES PLUS priority table says: 6÷2π is 6/(2π), while ' +
+    '6÷2(1+2) is 9. Answers stay exact (fractions, √, π) while every number typed was ' +
+    'a whole number.</p>' +
+    '<div class="btn" data-close="1">Close</div>';
+}
+
+function registerSW() {
+  if (!('serviceWorker' in navigator)) { updateInstallButton(); return; }
+  navigator.serviceWorker.register('./sw.js').then(function () {
+    if (navigator.serviceWorker.controller) { swReady = true; updateInstallButton(); }
+    navigator.serviceWorker.ready.then(function () { swReady = true; updateInstallButton(); });
+  }).catch(function () { });
+}
+
+/* ======================================================================
+   19. LAYOUT AND BOOT
+   ====================================================================== */
+/* Installed on a phone the calculator takes the whole screen; in a browser
+   tab it keeps its device proportions and leaves room for the install bar. */
+function fit() {
+  var st = $('stage');
+  if (!st) return;
+  var app = isStandalone();
+  var foot = document.querySelector('.foot');
+  document.body.classList.toggle('standalone', app);
+  if (foot) foot.classList.toggle('hide', app);
+
+  var h = app ? 662 : 716;
+  st.style.height = h + 'px';
+  var vw = window.innerWidth, vh = window.innerHeight;
+  var s = app
+    ? Math.min(vw / 360, vh / h)
+    : Math.min((vw - 16) / 360, (vh - 16) / h, 1.4);
+  st.style.transform = 'scale(' + s + ')';
+}
+
+function bind() {
+  document.addEventListener('pointerdown', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-key]') : null;
+    if (!t) return;
+    ev.preventDefault();
+    t.classList.add('down');
+    if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) { } }
+    press(t.dataset.key);
+  });
+  document.addEventListener('pointerup', clearDown);
+  document.addEventListener('pointercancel', clearDown);
+  document.addEventListener('contextmenu', function (ev) {
+    if (ev.target.closest && ev.target.closest('.calc')) ev.preventDefault();
+  });
+  document.addEventListener('keydown', onKeyDown);
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(display-mode: standalone)');
+    if (mq.addEventListener) mq.addEventListener('change', fit);
+  }
+
+  $('installBtn').addEventListener('click', onInstallClick);
+  $('helpBtn').addEventListener('click', function () { openSheet(helpSheetHtml()); });
+  $('scrim').addEventListener('click', function (ev) {
+    if (ev.target === $('scrim') || (ev.target.dataset && ev.target.dataset.close)) closeSheet();
+  });
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    updateInstallButton();
+  });
+  window.addEventListener('appinstalled', function () {
+    deferredPrompt = null;
+    updateInstallButton();
+  });
+}
+function clearDown() {
+  var ds = document.querySelectorAll('.down');
+  for (var i = 0; i < ds.length; i++) ds[i].classList.remove('down');
+}
+
+function boot() {
+  buildPad();
+  bind();
+  fit();
+  refresh();
+  updateInstallButton();
+  registerSW();
+}
+
+/* exported for the offline test-harness */
+window.FX = {
+  C: C, FRAC: FRAC, MIX: MIX, SQRT: SQRT, ROOT: ROOT, SUP: SUP,
+  tokenize: tokenize, evaluate: evaluate, ST: ST, fmtParts: fmtParts,
+  exactNodes: exactNodes, hasDecimal: hasDecimal, hasDMS: hasDMS,
+  decimalNodes: decimalNodes, dmsParts: dmsParts,
+  engParts: engParts, CalcError: CalcError, stripZeros: stripZeros, trimTo10: trimTo10,
+  press: press, UI: UI, resultNodes: resultNodes, factorNodes: factorNodes
+};
+
+if (typeof document !== 'undefined' && document.getElementById && document.getElementById('pad')) boot();
+</script>
+</body>
+</html>

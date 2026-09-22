@@ -1,0 +1,19 @@
+# local agent / editor tooling, not part of the app
+.claude/
+.kiro/
+.cursor/
+.github/hooks/
+.github/instructions/
+.github/copilot-instructions.md
+CLAUDE.md
+
+# os and editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# node (the app itself has no dependencies)
+node_modules/
+npm-debug.log*

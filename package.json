@@ -1,0 +1,23 @@
+{
+  "name": "fx-82-web-calculator",
+  "version": "1.0.0",
+  "description": "A scientific calculator with a natural textbook display that installs to a phone home screen and works offline. One HTML file, no dependencies.",
+  "license": "MIT",
+  "author": "Serhii Voinolovich",
+  "homepage": "https://sergeyitaly.github.io/calculator/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sergeyitaly/calculator.git"
+  },
+  "private": true,
+  "scripts": {
+    "test": "node test/engine.test.js && node test/ui.test.js && node test/security.test.js",
+    "test:engine": "node test/engine.test.js",
+    "test:ui": "node test/ui.test.js",
+    "test:security": "node test/security.test.js",
+    "csp": "node tools/csp.js",
+    "csp:check": "node tools/csp.js --check",
+    "icons": "node tools/mkicons.js ."
+  },
+  "keywords": ["calculator", "scientific-calculator", "pwa", "offline", "vanilla-js"]
+}

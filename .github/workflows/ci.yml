@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests and security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Engine tests
+        run: node test/engine.test.js
+
+      - name: UI tests
+        run: node test/ui.test.js
+
+      - name: Security tests
+        run: node test/security.test.js
+
+      - name: Content-Security-Policy hashes are current
+        run: node tools/csp.js --check
+
+      - name: Every file the page references exists
+        run: |
+          set -e
+          for f in index.html sw.js manifest.webmanifest \
+                   icons/icon-180.png icons/icon-192.png icons/icon-512.png; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+          done
+          echo "all referenced files present"
