@@ -47,7 +47,9 @@ function mkEl(tag) {
   });
   Object.defineProperty(e, 'innerHTML', {
     get() { return e._html || ''; },
-    set(v) { e._html = String(v); e._text = String(v).replace(/<[^>]*>/g, ''); e.children = []; }
+    /* the tests never read text back out of an innerHTML assignment, so the
+       markup is kept as-is rather than half-parsed */
+    set(v) { e._html = String(v); e._text = null; e.children = []; }
   });
   return e;
 }

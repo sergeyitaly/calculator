@@ -44,9 +44,16 @@ ok('innerHTML is only ever set from known-safe sources',
 ok('nothing typed by the user reaches innerHTML',
   !/innerHTML\s*=\s*[^;]*\b(entry|val|result|buf|v\b)/.test(html));
 
-/* ---------- no inline event handlers (they would need unsafe-inline) ---- */
-ok('no inline on* handlers in the markup',
-  !/<[^>]+\son[a-z]+\s*=/i.test(html.replace(/<script[\s\S]*?<\/script>/g, '')));
+/* ---------- no inline event handlers (they would need unsafe-inline) ----
+   The page carries exactly one script block, so "the markup" is everything
+   outside it. That is sliced at the boundaries rather than filtered with a
+   regular expression, which is never a safe way to remove HTML. */
+const scriptOpen = html.indexOf('<script>');
+const scriptClose = html.lastIndexOf('</script>');
+ok('the page has exactly one script block',
+  scriptOpen > 0 && html.toLowerCase().split('<script').length - 1 === 1);
+const markup = html.slice(0, scriptOpen) + html.slice(scriptClose + '</script>'.length);
+ok('no inline on* handlers in the markup', !/<[^>]+\son[a-z]+\s*=/i.test(markup));
 ok('no javascript: urls', !/javascript:/i.test(html));
 
 /* ---------- nothing is loaded from another origin ---------- */
