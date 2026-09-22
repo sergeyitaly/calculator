@@ -64,8 +64,18 @@ ok('no third-party resources', urls.every(u => ALLOWED.includes(u)),
 ok('no external script tags', !/<script[^>]+src=/i.test(html));
 ok('no external stylesheets', !/<link[^>]+rel=["']?stylesheet/i.test(html));
 ok('the page never calls fetch or XHR', !/\bfetch\s*\(|XMLHttpRequest/.test(html));
-ok('no cookies or storage of anything personal',
-  !/document\.cookie|localStorage|sessionStorage|indexedDB/.test(html));
+ok('no cookies, session storage or indexed storage',
+  !/document\.cookie|sessionStorage|indexedDB/.test(html));
+/* One key is kept on the device: whether the key click and buzz are on.
+   Nothing else may be written, and nothing may be read back under another
+   name - so every call has to be a get or a set of that one constant. */
+const stores = html.match(/localStorage\s*\.\s*\w+\s*\([^)]*\)/g) || [];
+ok('storage is used only for the key-feedback preference',
+  stores.length === 2 &&
+  stores.every(s => /^localStorage\s*\.\s*(get|set)Item\s*\(\s*PREF_KEY\b/.test(s)),
+  'found: ' + JSON.stringify(stores));
+ok('the preference key is a fixed name, not built from anything typed',
+  /var PREF_KEY = '[a-z.]+';/.test(html));
 
 /* ---------- the policy that enforces all of the above ---------- */
 const csp = /<meta http-equiv="Content-Security-Policy" content="([^"]*)">/.exec(html);

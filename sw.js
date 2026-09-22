@@ -3,7 +3,7 @@
    opened one time it starts with no network at all. Responses are served from
    the cache first and refreshed in the background, so a new deploy is picked
    up the next time the app is launched. */
-const CACHE = 'calculator-v1';
+const CACHE = 'calculator-v2';
 const ASSETS = [
   './',
   './index.html',

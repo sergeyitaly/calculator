@@ -43,6 +43,11 @@ plane, in a basement, or in an exam room with no signal.
   (A–F, X, Y, M) with `STO`/`RCL`, `M+`/`M−`, and `Ans`.
 * **MODE** — COMP, STAT (1-VAR and A+BX) and TABLE.
   **SETUP** (SHIFT MODE) — MthIO/LineIO, Deg/Rad/Gra, Fix/Sci/Norm, ab/c and d/c.
+* **Key click and buzz.** A short tick and, on a phone that supports vibration, a light
+  buzz on every key. **SHIFT 8** turns both off and on; `MUTE` appears on the display
+  while they are off, and the choice is remembered. The tone is generated in the page, so
+  nothing extra is downloaded. (iPhones have no vibration API in Safari, so there you get
+  the click only.)
 * **Help on SHIFT 7** - the key map and the notes below, without leaving the app. The
   footer button disappears once the app is installed, so the help lives on a key too.
 * **Errors** behave as you would expect: `Math ERROR`, `Syntax ERROR`, and the arrows take
@@ -79,7 +84,7 @@ printed in a scientific calculator's manual.
 ### Running the tests
 
 ```sh
-npm test            # engine + UI + security, 140 assertions
+npm test            # engine + UI + security, 151 assertions
 npm run csp:check   # the CSP hashes still match index.html
 ```
 
@@ -88,8 +93,8 @@ the page will refuse to run its own script.
 
 ## Security
 
-No backend, no accounts, no analytics, no cookies, nothing stored about you, and nothing
-loaded from another origin. See [SECURITY.md](SECURITY.md) for the specifics and how they
+No backend, no accounts, no analytics, no cookies and nothing loaded from another origin.
+The only thing kept on the device is whether the key click is on. See [SECURITY.md](SECURITY.md) for the specifics and how they
 are enforced in CI.
 
 ## Licence

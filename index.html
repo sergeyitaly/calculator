@@ -7,7 +7,7 @@
 <meta name="description" content="Scientific calculator with natural textbook display. Works offline.">
 <meta name="theme-color" content="#0b0b0c">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-GpN0hNpfyE3NIxnlUr0IFIAoILcLEkbN3v5jy6hxPSk='; style-src 'sha256-8GW83EBbKdsoIEATJ8KKvSl7+fp1dFnyN1wBpcve1PQ='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-yWol8KAqs+xbC8/LX9k1bjf4glymfwFS0PWn+LPLgiw='; style-src 'sha256-8GW83EBbKdsoIEATJ8KKvSl7+fp1dFnyN1wBpcve1PQ='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
@@ -507,6 +507,7 @@ var ST = {
   disp: { t: 'norm', n: 1 },/* {t:'norm',n:1|2} {t:'fix',n} {t:'sci',n}   */
   math: true,               /* MthIO (true) or LineIO                     */
   mixed: false,             /* ab/c (true) or d/c (false)                 */
+  feedback: true,           /* key click and buzz, SHIFT 8                 */
   ans: 0,
   vars: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, X: 0, Y: 0, M: 0 }
 };
@@ -1142,7 +1143,7 @@ var ROWS6 = [
 
 var ROWS5 = [
   [
-    { id: '7', l: '7', s: 'HELP', c: 'num' }, { id: '8', l: '8', c: 'num' },
+    { id: '7', l: '7', s: 'HELP', c: 'num' }, { id: '8', l: '8', s: 'SOUND', c: 'num' },
     { id: '9', l: '9', s: 'CLR', c: 'num' },
     { id: 'del', l: 'DEL', s: 'INS', c: 'acc' }, { id: 'ac', l: 'AC', s: 'OFF', c: 'acc' }
   ],
@@ -1217,6 +1218,7 @@ function indicators() {
   if (ST.disp.t === 'fix') out.push('FIX');
   if (ST.disp.t === 'sci') out.push('SCI');
   if (ST.math) out.push('Math');
+  if (!ST.feedback) out.push('MUTE');
   return out;
 }
 
@@ -1676,8 +1678,9 @@ function compKey(id, sh, al) {
   }
   UI.pending = null;
 
-  /* the yellow labels printed over four of the number keys */
+  /* the yellow labels printed over five of the number keys */
   if (sh && id === '7') { openSheet(helpSheetHtml()); return; }
+  if (sh && id === '8') { toggleFeedback(); return; }
   if (sh && id === '9') { openClrMenu(); return; }
   if (sh && id === '1') { if (UI.mode === 'STAT') statResults(); return; }
   if (sh && id === '0') { startEntry(id); insertToken('Rnd('); return; }
@@ -2023,6 +2026,72 @@ function gameKey(id) {
 }
 
 /* ======================================================================
+   16b. KEY FEEDBACK - a short click and a buzz
+   ====================================================================== */
+/* The tone is synthesised rather than downloaded, so there is still only one
+   file to install. Nothing is created until the first key is touched: iOS
+   will not let a page make a sound outside a gesture, and building the audio
+   context inside the first pointerdown is what unlocks it. Vibration is
+   whatever the device offers - Android buzzes, iOS Safari has no vibration
+   API and simply skips it, leaving the click. SHIFT 8 turns the pair off and
+   on, and that choice is the only thing this page ever stores. */
+var PREF_KEY = 'calculator.feedback';
+var audio = null;
+
+function loadPrefs() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (localStorage.getItem(PREF_KEY) === 'off') ST.feedback = false;
+  } catch (e) { }
+}
+function savePrefs() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(PREF_KEY, ST.feedback ? 'on' : 'off');
+  } catch (e) { }
+}
+
+function audioCtx() {
+  if (audio) return audio;
+  var A = typeof window === 'undefined' ? null : (window.AudioContext || window.webkitAudioContext);
+  if (!A) return null;
+  try { audio = new A(); } catch (e) { audio = null; }
+  return audio;
+}
+/* one tick: a soft sine that is up in 6 ms and gone in 50 */
+function click(freq) {
+  var ac = audioCtx();
+  if (!ac) return;
+  try {
+    if (ac.state === 'suspended' && ac.resume) ac.resume();
+    var t = ac.currentTime;
+    var osc = ac.createOscillator(), g = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    osc.connect(g); g.connect(ac.destination);
+    osc.start(t); osc.stop(t + 0.06);
+  } catch (e) { }
+}
+function buzz(ms) {
+  try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms); } catch (e) { }
+}
+/* every key, whether it came from the pad or from a computer keyboard */
+function keyFeedback(id) {
+  if (!ST.feedback) return;
+  var big = id === 'eq' || id === 'ac' || id === 'on';
+  buzz(big ? 14 : 8);
+  click(id === 'eq' ? 1050 : big ? 780 : 1400);
+}
+function toggleFeedback() {
+  ST.feedback = !ST.feedback;
+  savePrefs();
+  if (ST.feedback) { buzz(14); click(1050); }
+}
+
+/* ======================================================================
    17. PHYSICAL KEYBOARD
    ====================================================================== */
 var KEYMAP = {
@@ -2043,6 +2112,7 @@ function onKeyDown(ev) {
   if (!id) return;
   ev.preventDefault();
   flash(id);
+  keyFeedback(id);
   press(id);
 }
 function flash(id) {
@@ -2156,6 +2226,7 @@ function helpSheetHtml() {
     row('SHIFT then RCL', 'STO — store the answer in a variable') +
     row('SHIFT then MODE', 'SETUP: MthIO, angle unit, Fix / Sci / Norm, ab/c') +
     row('SHIFT then 7', 'this help, wherever you are') +
+    row('SHIFT then 8', 'key click and buzz on or off - MUTE shows when off') +
     row('MODE', 'COMP, STAT (1-VAR, A+BX) and TABLE') +
     '</table>' +
     '<h3>Computer keyboard</h3><table class="tbl">' +
@@ -2255,7 +2326,7 @@ function bind() {
     if (!t) return;
     ev.preventDefault();
     t.classList.add('down');
-    if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) { } }
+    keyFeedback(t.dataset.key);
     press(t.dataset.key);
   });
   document.addEventListener('pointerup', clearDown);
@@ -2293,6 +2364,7 @@ function clearDown() {
 }
 
 function boot() {
+  loadPrefs();
   buildPad();
   bind();
   fit();

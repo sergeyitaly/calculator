@@ -120,6 +120,17 @@ check('SHIFT 7 opens help', dom.byId.scrim.classList.contains('show'), true);
 check('help panel has content', dom.byId.sheet.innerHTML.length > 200, true);
 dom.byId.scrim.classList.remove('show');
 
+/* ---- the key click and buzz, and its switch on SHIFT 8 ---- */
+FX.press('ac');
+check('the click and buzz start on', FX.ST.feedback, true);
+FX.press('shift'); FX.press('8');
+check('SHIFT 8 turns them off', FX.ST.feedback, false);
+check('MUTE appears on the display', dom.byId.ind.textContent.indexOf('MUTE') >= 0, true);
+check('SHIFT 8 types nothing', FX.UI.entry.length, 0);
+FX.press('shift'); FX.press('8');
+check('SHIFT 8 turns them back on', FX.ST.feedback, true);
+check('MUTE goes away', dom.byId.ind.textContent.indexOf('MUTE') >= 0, false);
+
 /* ---- the hidden games ---- */
 FX.press('ac');
 keys(['repu', 'repu', 'repd', 'repd', 'repl', 'repr', 'repl', 'repr']);
