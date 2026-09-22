@@ -22,8 +22,8 @@ SOFTWARE.
 
 ---
 
-This project is an independent, from-scratch reimplementation written for the
-web. It is not affiliated with, endorsed by, or connected to Casio Computer
-Co., Ltd. "Casio" and "fx-82ES PLUS" are trademarks of their respective owner
-and are referred to here only to describe which calculator's behaviour this
-program imitates.
+This project was written from scratch for the web. No code, firmware, artwork
+or other assets from any calculator manufacturer are used or reproduced in it,
+and it is not affiliated with, endorsed by, or connected to any such company.
+Product names that may appear in discussion of it remain the trademarks of
+their respective owners.

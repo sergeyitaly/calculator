@@ -1,5 +1,5 @@
 {
-  "name": "fx-82-web-calculator",
+  "name": "web-scientific-calculator",
   "version": "1.0.0",
   "description": "A scientific calculator with a natural textbook display that installs to a phone home screen and works offline. One HTML file, no dependencies.",
   "license": "MIT",
@@ -19,5 +19,11 @@
     "csp:check": "node tools/csp.js --check",
     "icons": "node tools/mkicons.js ."
   },
-  "keywords": ["calculator", "scientific-calculator", "pwa", "offline", "vanilla-js"]
+  "keywords": [
+    "calculator",
+    "scientific-calculator",
+    "pwa",
+    "offline",
+    "vanilla-js"
+  ]
 }

@@ -1,9 +1,9 @@
-/* Offline support for the fx-82 web calculator.
+/* Offline support for the calculator.
    Everything the app needs is precached on install, so once the page has been
    opened one time it starts with no network at all. Responses are served from
    the cache first and refreshed in the background, so a new deploy is picked
    up the next time the app is launched. */
-const CACHE = 'fx82-v1';
+const CACHE = 'calculator-v1';
 const ASSETS = [
   './',
   './index.html',

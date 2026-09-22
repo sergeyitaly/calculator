@@ -1,18 +1,37 @@
 {
-  "name": "fx-82 Web Calculator",
-  "short_name": "fx-82",
-  "description": "Scientific calculator with a natural textbook display. Works offline.",
-  "id": "fx-82-web-calculator",
+  "name": "Calculator",
+  "short_name": "Calculator",
+  "description": "A scientific calculator with a natural textbook display. Works offline.",
+  "id": "web-scientific-calculator",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0c0e11",
   "theme_color": "#14171c",
-  "categories": ["utilities", "education", "productivity"],
+  "categories": [
+    "utilities",
+    "education",
+    "productivity"
+  ],
   "icons": [
-    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

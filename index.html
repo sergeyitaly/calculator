@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>fx-82 Web Calculator</title>
+<title>Calculator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Scientific calculator with natural textbook display. Works offline.">
 <meta name="theme-color" content="#0b0b0c">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-1T0G3kD8X4McMyY2P999NA+nSOOULBcHwbEloTn7css='; style-src 'sha256-RzUrEUOFSYCdiICKrPD4D3p5DOOsyn0NBAHrRjQtY2w='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-KyZMTb4uFeouSWP9VmjEgcG6V3ECt/yrk9cpeGX5cDc='; style-src 'sha256-yVdV2Fpjfxl8Vn1634hEoUnaHoqLq1EEClRfWgz1sGU='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="fx-82">
+<meta name="apple-mobile-web-app-title" content="Calculator">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#e9edf2;
@@ -34,13 +34,8 @@ body.standalone .calc{border-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,
     inset 0 -2px 8px rgba(0,0,0,.6);
   display:flex;flex-direction:column}
 
-.top{padding:0 4px 8px;line-height:1}
-.brandrow{display:flex;align-items:baseline;justify-content:space-between}
-.brand{font-size:16px;font-weight:800;letter-spacing:.1em;color:#f2f4f7;text-shadow:0 1px 0 #000}
-.model{font-size:11px;font-weight:600;letter-spacing:.04em;color:#e6e9ee}
-.vpam{margin-top:7px;display:flex;align-items:baseline;justify-content:center;gap:9px}
-.vpam i{font-size:9.5px;font-style:italic;font-weight:800;letter-spacing:.09em;color:#c9ced6}
-.vpam b{font-size:7.5px;font-weight:700;color:#9aa0a8}
+.top{padding:6px 4px 13px;line-height:1;text-align:center}
+.brand{font-size:15px;font-weight:700;letter-spacing:.3em;color:#eef1f6;text-shadow:0 1px 0 #000}
 
 /* ---------------- LCD ---------------- */
 .bezel{border-radius:4px;padding:6px;background:linear-gradient(#17171a,#0d0d0f);
@@ -186,13 +181,7 @@ sub.bs{font-size:.6em;vertical-align:sub;line-height:0;padding:0 .03em}
 <body>
 <div id="stage">
   <div class="calc">
-    <div class="top">
-      <div class="brandrow">
-        <span class="brand">fx-82 WEB</span>
-        <span class="model">fx-82ES PLUS style</span>
-      </div>
-      <div class="vpam"><i>NATURAL-V.P.A.M.</i><b>2nd edition</b></div>
-    </div>
+    <div class="top"><span class="brand">Calculator</span></div>
 
     <div class="bezel">
       <div class="lcd" id="lcd">
@@ -220,10 +209,11 @@ sub.bs{font-size:.6em;vertical-align:sub;line-height:0;padding:0 .03em}
 <script>
 "use strict";
 /* ======================================================================
-   fx-82 WEB
-   A browser reproduction of a Casio fx-82ES PLUS (2nd edition):
-   natural textbook display, the same operator precedence table, the same
-   S<=>D exact/decimal answers, the same SETUP and MODE menus.
+   Calculator
+   A scientific calculator with a natural textbook display. The expression
+   on screen is a tree rather than a string, the parser follows the priority
+   table classic scientific calculators use, and answers come back exact
+   (fractions, surds, multiples of pi) wherever they can.
    Everything lives in this one file so the app can be cached offline.
    ====================================================================== */
 
@@ -634,7 +624,7 @@ function applyFn(name, args) {
 
 /* ======================================================================
    6. PARSER / EVALUATOR
-   Priority, straight off the fx-82ES PLUS manual's table:
+   Priority, as a scientific calculator's manual sets it out:
      1 functions with brackets          sin(, log(, Abs(
      2 postfix functions                x!, %, d m s
      3 powers and roots                 x^, x2, x3, x-1, nth root
@@ -815,7 +805,7 @@ function evaluate(nodes) {
 }
 
 /* ======================================================================
-   7. TURNING A NUMBER BACK INTO A CASIO-LOOKING ANSWER
+   7. TURNING A NUMBER BACK INTO AN ANSWER THE DISPLAY CAN SHOW
    ====================================================================== */
 function stripZeros(s) {
   if (s.indexOf('.') < 0) return s;
@@ -2151,9 +2141,9 @@ function onInstallClick() {
 
 function helpSheetHtml() {
   function row(a, b) { return '<tr><td>' + a + '</td><td>' + b + '</td></tr>'; }
-  return '<h2>fx-82 WEB</h2>' +
-    '<p>A browser copy of a Casio fx-82ES PLUS (2nd edition): natural display, the same ' +
-    'priority table, the same exact answers.</p>' +
+  return '<h2>Calculator</h2>' +
+    '<p>A scientific calculator with a natural textbook display: fractions and roots are ' +
+    'drawn the way they are written, and answers come back exact where they can.</p>' +
     '<h3>Entering</h3><table class="tbl">' +
     row('SHIFT then a key', 'the yellow label above it') +
     row('ALPHA then a key', 'the pink label (variables A–F, X, Y, M)') +
