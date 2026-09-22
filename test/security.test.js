@@ -70,12 +70,19 @@ ok('no cookies, session storage or indexed storage',
    Nothing else may be written, and nothing may be read back under another
    name - so every call has to be a get or a set of that one constant. */
 const stores = html.match(/localStorage\s*\.\s*\w+\s*\([^)]*\)/g) || [];
-ok('storage is used only for the key-feedback preference',
+ok('storage is used only for the two saved preferences',
   stores.length === 2 &&
   stores.every(s => /^localStorage\s*\.\s*(get|set)Item\s*\(\s*PREF_KEY\b/.test(s)),
   'found: ' + JSON.stringify(stores));
 ok('the preference key is a fixed name, not built from anything typed',
   /var PREF_KEY = '[a-z.]+';/.test(html));
+/* The case colour is read back out of storage and lands in an attribute, so
+   it has to be checked against the fixed list on the way in and on the way
+   out - a stored name is untrusted input like any other. */
+ok('a case name out of storage is checked against the fixed list',
+  /function knownCase\(/.test(html) &&
+  /if \(knownCase\(v\[1\]\)\) ST\.theme = v\[1\];/.test(html) &&
+  /function setCase\(k\) \{\s*if \(!knownCase\(k\)\) return;/.test(html));
 
 /* ---------- the policy that enforces all of the above ---------- */
 const csp = /<meta http-equiv="Content-Security-Policy" content="([^"]*)">/.exec(html);

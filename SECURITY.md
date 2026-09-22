@@ -9,9 +9,10 @@ first visit even that stops, because the service worker serves them from the loc
 
 Nothing you type is stored or transmitted. Memories (A–F, X, Y, M and Ans) live in a
 JavaScript variable and disappear when the app is closed. One thing is kept on the device:
-a single `localStorage` entry, `calculator.feedback`, holding `on` or `off` for the key
-click and buzz. It never leaves the browser, and a test asserts that this is the only
-value the page reads or writes.
+a single `localStorage` entry, `calculator.prefs`, holding two settings - whether the key
+click is on, and which of the five case colours you picked, as in `on grey`. It never
+leaves the browser, and a test asserts that this is the only value the page reads or
+writes.
 
 ## What is enforced, and where
 
@@ -24,7 +25,8 @@ value the page reads or writes.
 | Inline event handlers | None in the markup; all listeners are attached in code (an `onclick` attribute would need `unsafe-inline`). | `test/security.test.js` |
 | A service worker caching things it should not | It ignores anything that is not a same-origin `GET`, has an explicit asset list, and pulls in no remote code. | `test/security.test.js` |
 | Clickjacking | `frame-ancestors 'none'` in the policy. GitHub Pages cannot send response headers, so this is the meta-tag form. | `test/security.test.js` |
-| Anything being stored about you | The only write to storage is `on`/`off` for the key click, under a fixed key name. The test matches every `localStorage` call in the file and fails if there is a third one or if the key is not the constant. | `test/security.test.js` |
+| Anything being stored about you | The only write to storage is the key-click setting and the case colour, under a fixed key name. The test matches every `localStorage` call in the file and fails if there is a third one or if the key is not the constant. | `test/security.test.js` |
+| A stored value being trusted on the way back in | The case colour read from storage is matched against a fixed list of five names before it reaches the DOM, so a tampered entry cannot put anything of its own into the page. | `test/security.test.js` |
 | Dependency supply chain | There are no dependencies. `package.json` has an empty dependency tree and the tests run on plain Node. | n/a |
 | Unknown code-level issues | GitHub CodeQL with the `security-extended` query pack, on every push and weekly. | `.github/workflows/codeql.yml` |
 

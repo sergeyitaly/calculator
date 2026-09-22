@@ -7,7 +7,7 @@
 <meta name="description" content="Scientific calculator with natural textbook display. Works offline.">
 <meta name="theme-color" content="#0b0b0c">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-yWol8KAqs+xbC8/LX9k1bjf4glymfwFS0PWn+LPLgiw='; style-src 'sha256-8GW83EBbKdsoIEATJ8KKvSl7+fp1dFnyN1wBpcve1PQ='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-3SEboGBNGMokPnpnl6iA0C5mh6diJJ3Un4kr0ERvmx8='; style-src 'sha256-7QXkSPGhU5Uf7OW5uMr9e0FwVbLk8TyUu9O5qdhsASg='; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
@@ -23,22 +23,42 @@ body{display:flex;align-items:center;justify-content:center;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 #stage{width:360px;height:716px;transform-origin:50% 50%;flex:none}
 /* installed on a phone: edge to edge, no device frame */
-body.standalone{background:#0c0c0d}
+body.standalone{background:var(--surround)}
 #safeprobe{position:fixed;visibility:hidden;pointer-events:none;z-index:-1;
   top:env(safe-area-inset-top);bottom:env(safe-area-inset-bottom);
   left:env(safe-area-inset-left);right:env(safe-area-inset-right)}
-body.standalone .calc{border-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+body.standalone .calc{border-radius:0;box-shadow:inset 0 1px 0 var(--gloss)}
+
+/* ---------------- the colour of the shell ----------------
+   Four stops of the case gradient, the edge, the gloss along the top and the
+   colour the name is printed in. SHIFT 5 swaps the set; the keys and the
+   display stay as they are, the way the coloured models are made. */
+body{--c1:#232326;--c2:#141416;--c3:#0e0e10;--c4:#141417;--edge:#000;
+  --gloss:rgba(255,255,255,.10);--brand:#eef1f6;--brandsh:#000;--surround:#0c0c0d;
+  --sh:#f2b12b;--al:#ec7f9f;--wh:#e9ecf1}
+body[data-case="pink"]{--c1:#f9c2d2;--c2:#ef95b1;--c3:#dd6f93;--c4:#ee9cb6;--edge:#a2566f;
+  --gloss:rgba(255,255,255,.5);--brand:#4b1f2e;--brandsh:rgba(255,255,255,.4);--surround:#2a1119;
+  --sh:#7c4300;--al:#7d1440;--wh:#2c1620}
+body[data-case="blue"]{--c1:#bcd9f4;--c2:#8fbde9;--c3:#5e97cd;--c4:#89b9e2;--edge:#3f6a92;
+  --gloss:rgba(255,255,255,.5);--brand:#14304a;--brandsh:rgba(255,255,255,.4);--surround:#0f1e2e;
+  --sh:#7a4600;--al:#8c1544;--wh:#122a41}
+body[data-case="grey"]{--c1:#e3e7ea;--c2:#c6ccd2;--c3:#a5adb5;--c4:#c8ced5;--edge:#7b838b;
+  --gloss:rgba(255,255,255,.6);--brand:#20262c;--brandsh:rgba(255,255,255,.45);--surround:#1a1d20;
+  --sh:#8a5600;--al:#9c1a4e;--wh:#1f242a}
+body[data-case="green"]{--c1:#dcefc4;--c2:#c0e1a0;--c3:#9dcb77;--c4:#c1e2a3;--edge:#6e9a4d;
+  --gloss:rgba(255,255,255,.55);--brand:#213a17;--brandsh:rgba(255,255,255,.4);--surround:#16220f;
+  --sh:#7a4c00;--al:#8c1544;--wh:#1f3315}
 
 /* ---------------- calculator body ---------------- */
 .calc{width:360px;height:662px;border-radius:22px;padding:13px 12px 15px;
-  background:linear-gradient(168deg,#232326 0%,#141416 12%,#0e0e10 60%,#141417 100%);
-  border:1px solid #000;
-  box-shadow:0 18px 44px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.10),
+  background:linear-gradient(168deg,var(--c1) 0%,var(--c2) 12%,var(--c3) 60%,var(--c4) 100%);
+  border:1px solid var(--edge);
+  box-shadow:0 18px 44px rgba(0,0,0,.75),inset 0 1px 0 var(--gloss),
     inset 0 -2px 8px rgba(0,0,0,.6);
   display:flex;flex-direction:column}
 
 .top{padding:6px 4px 13px;line-height:1;text-align:center}
-.brand{font-size:15px;font-weight:700;letter-spacing:.3em;color:#eef1f6;text-shadow:0 1px 0 #000}
+.brand{font-size:15px;font-weight:700;letter-spacing:.3em;color:var(--brand);text-shadow:0 1px 0 var(--brandsh)}
 
 /* ---------------- LCD ---------------- */
 .bezel{border-radius:4px;padding:6px;background:linear-gradient(#17171a,#0d0d0f);
@@ -115,14 +135,14 @@ sub.bs{font-size:.6em;vertical-align:sub;line-height:0;padding:0 .03em}
   filter:brightness(1.25)}
 .key .sh,.key .al,.key .wh{position:absolute;top:-12px;font-size:8.5px;font-weight:700;
   white-space:nowrap;line-height:1;pointer-events:none}
-.key .sh{left:0;color:#f2b12b}
-.key .al{right:0;color:#ec7f9f}
-.key .wh{left:0;color:#e9ecf1;font-weight:600}
+.key .sh{left:0;color:var(--sh)}
+.key .al{right:0;color:var(--al)}
+.key .wh{left:0;color:var(--wh);font-weight:600}
 .key .wh.rgt{left:auto;right:0}
 .key.pill .wh{left:50%;transform:translateX(-50%);text-align:center}
 .key .wh b{font-weight:700}
-.key .wh b.y{color:#f2b12b}
-.key .wh b.p{color:#ec7f9f}
+.key .wh b.y{color:var(--sh)}
+.key .wh b.p{color:var(--al)}
 .kfr{display:inline-flex;flex-direction:column;font-size:.8em;line-height:1;vertical-align:-.15em}
 .kfr em{font-style:normal;padding:0 1px}
 .kfr em:first-child{border-bottom:1px solid currentColor;padding-bottom:1px}
@@ -508,6 +528,7 @@ var ST = {
   math: true,               /* MthIO (true) or LineIO                     */
   mixed: false,             /* ab/c (true) or d/c (false)                 */
   feedback: true,           /* key click and buzz, SHIFT 8                 */
+  theme: 'black',           /* colour of the shell, SHIFT 5                */
   ans: 0,
   vars: { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, X: 0, Y: 0, M: 0 }
 };
@@ -1148,7 +1169,7 @@ var ROWS5 = [
     { id: 'del', l: 'DEL', s: 'INS', c: 'acc' }, { id: 'ac', l: 'AC', s: 'OFF', c: 'acc' }
   ],
   [
-    { id: '4', l: '4', c: 'num' }, { id: '5', l: '5', c: 'num' }, { id: '6', l: '6', c: 'num' },
+    { id: '4', l: '4', c: 'num' }, { id: '5', l: '5', s: 'COLOUR', c: 'num' }, { id: '6', l: '6', c: 'num' },
     { id: 'mul', l: '×', s: 'nPr', c: 'op' }, { id: 'div', l: '÷', s: 'nCr', c: 'op' }
   ],
   [
@@ -1386,6 +1407,13 @@ function openSetup(page) {
 function askDigit(label, f) {
   UI.menu = { title: label, items: [], digits: f };
   UI.screen = 'menu';
+}
+function openCaseMenu() {
+  var items = [];
+  CASE_NAMES.forEach(function (c, i) {
+    items.push({ n: String(i + 1), t: c.t, f: function () { setCase(c.k); } });
+  });
+  openMenu('', items);
 }
 function openClrMenu() {
   openMenu('', [
@@ -1681,6 +1709,7 @@ function compKey(id, sh, al) {
   /* the yellow labels printed over five of the number keys */
   if (sh && id === '7') { openSheet(helpSheetHtml()); return; }
   if (sh && id === '8') { toggleFeedback(); return; }
+  if (sh && id === '5') { openCaseMenu(); return; }
   if (sh && id === '9') { openClrMenu(); return; }
   if (sh && id === '1') { if (UI.mode === 'STAT') statResults(); return; }
   if (sh && id === '0') { startEntry(id); insertToken('Rnd('); return; }
@@ -2034,21 +2063,52 @@ function gameKey(id) {
    context inside the first pointerdown is what unlocks it. Vibration is
    whatever the device offers - Android buzzes, iOS Safari has no vibration
    API and simply skips it, leaving the click. SHIFT 8 turns the pair off and
-   on, and that choice is the only thing this page ever stores. */
-var PREF_KEY = 'calculator.feedback';
+   on, and that choice, with the colour of the shell, is the only thing this
+   page ever stores - one entry, of the form "on grey". */
+var PREF_KEY = 'calculator.prefs';
 var audio = null;
 
 function loadPrefs() {
   try {
     if (typeof localStorage === 'undefined') return;
-    if (localStorage.getItem(PREF_KEY) === 'off') ST.feedback = false;
+    var v = String(localStorage.getItem(PREF_KEY) || '').split(' ');
+    if (v[0] === 'off') ST.feedback = false;
+    if (knownCase(v[1])) ST.theme = v[1];
   } catch (e) { }
 }
 function savePrefs() {
   try {
     if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(PREF_KEY, ST.feedback ? 'on' : 'off');
+    localStorage.setItem(PREF_KEY, (ST.feedback ? 'on' : 'off') + ' ' + ST.theme);
   } catch (e) { }
+}
+
+/* ---- the colour of the shell, on SHIFT 5 ----
+   The stylesheet holds one set of colours per name. Only a name from this
+   list ever reaches the attribute, whatever is sitting in storage. */
+var CASE_NAMES = [
+  { k: 'black', t: 'Black' },
+  { k: 'pink', t: 'Pink' },
+  { k: 'blue', t: 'Blue' },
+  { k: 'grey', t: 'Grey' },
+  { k: 'green', t: 'Green' }
+];
+function knownCase(k) {
+  for (var i = 0; i < CASE_NAMES.length; i++) if (CASE_NAMES[i].k === k) return true;
+  return false;
+}
+function applyCase() {
+  try {
+    if (typeof document === 'undefined' || !document.body || !document.body.dataset) return;
+    if (ST.theme === 'black') delete document.body.dataset.case;
+    else document.body.dataset.case = ST.theme;
+  } catch (e) { }
+}
+function setCase(k) {
+  if (!knownCase(k)) return;
+  ST.theme = k;
+  applyCase();
+  savePrefs();
 }
 
 function audioCtx() {
@@ -2227,6 +2287,7 @@ function helpSheetHtml() {
     row('SHIFT then MODE', 'SETUP: MthIO, angle unit, Fix / Sci / Norm, ab/c') +
     row('SHIFT then 7', 'this help, wherever you are') +
     row('SHIFT then 8', 'key click and buzz on or off - MUTE shows when off') +
+    row('SHIFT then 5', 'the colour of the case: black, pink, blue, grey, green') +
     row('MODE', 'COMP, STAT (1-VAR, A+BX) and TABLE') +
     '</table>' +
     '<h3>Computer keyboard</h3><table class="tbl">' +
@@ -2365,6 +2426,7 @@ function clearDown() {
 
 function boot() {
   loadPrefs();
+  applyCase();
   buildPad();
   bind();
   fit();

@@ -131,6 +131,21 @@ FX.press('shift'); FX.press('8');
 check('SHIFT 8 turns them back on', FX.ST.feedback, true);
 check('MUTE goes away', dom.byId.ind.textContent.indexOf('MUTE') >= 0, false);
 
+/* ---- the colour of the shell, on SHIFT 5 ---- */
+FX.press('ac');
+check('the case starts black', FX.ST.theme, 'black');
+FX.press('shift'); FX.press('5');
+check('SHIFT 5 opens the colour menu', FX.UI.screen, 'menu');
+FX.press('2');
+check('2 picks pink', FX.ST.theme, 'pink');
+check('the shell carries the name', dom.document.body.dataset.case, 'pink');
+FX.press('shift'); FX.press('5'); FX.press('5');
+check('5 picks green', FX.ST.theme, 'green');
+FX.press('shift'); FX.press('5'); FX.press('1');
+check('1 goes back to black', FX.ST.theme, 'black');
+check('black leaves no name on the shell', dom.document.body.dataset.case, undefined);
+check('SHIFT 5 types nothing', FX.UI.entry.length, 0);
+
 /* ---- the hidden games ---- */
 FX.press('ac');
 keys(['repu', 'repu', 'repd', 'repd', 'repl', 'repr', 'repl', 'repr']);

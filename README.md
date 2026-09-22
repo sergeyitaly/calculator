@@ -48,6 +48,10 @@ plane, in a basement, or in an exam room with no signal.
   while they are off, and the choice is remembered. The tone is generated in the page, so
   nothing extra is downloaded. (iPhones have no vibration API in Safari, so there you get
   the click only.)
+* **Five case colours.** **SHIFT 5** opens a menu - black, pink, blue, grey or light
+  green - and the shell, the printed legends and the name change together. The keys and
+  the display stay as they are, the way the coloured models are made. The choice is
+  remembered.
 * **Help on SHIFT 7** - the key map and the notes below, without leaving the app. The
   footer button disappears once the app is installed, so the help lives on a key too.
 * **Errors** behave as you would expect: `Math ERROR`, `Syntax ERROR`, and the arrows take
@@ -84,7 +88,7 @@ printed in a scientific calculator's manual.
 ### Running the tests
 
 ```sh
-npm test            # engine + UI + security, 151 assertions
+npm test            # engine + UI + security, 160 assertions
 npm run csp:check   # the CSP hashes still match index.html
 ```
 
