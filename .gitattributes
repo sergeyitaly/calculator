@@ -1,0 +1,5 @@
+# The Content-Security-Policy pins the SHA-256 of the inline script and style
+# in index.html, so the bytes must be identical on every platform.
+* text=auto eol=lf
+
+*.png binary
